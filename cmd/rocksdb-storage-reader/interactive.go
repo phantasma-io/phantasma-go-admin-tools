@@ -24,7 +24,7 @@ func (v *ListBalancesForAddressVisitor) Visit(it *grocksdb.Iterator) bool {
 			value := it.Value()
 
 			br := *io.NewBinReaderFromBuf(value.Data())
-			number := br.ReadNumber()
+			number := br.ReadBigInteger()
 			value.Free()
 
 			fmt.Println(v.labels[i] + ": " + number.String())
