@@ -15,6 +15,8 @@ var appOpts struct {
 	ListKeysWithUnknownBaseKeys bool   `long:"list-keys-with-unknown-base-keys" description:"Show keys with unknown base keys"`
 	ListKeysWithUnknownSubKeys  bool   `long:"list-keys-with-unknown-sub-keys" description:"Show keys with unknown sub keys. base-key argument is mandatory if this flag is passed"`
 	ListUniqueSubKeys           bool   `long:"list-unique-sub-keys" description:"Show unique sub keys for given base key. base-key argument is mandatory if this flag is passed"`
+	ParseSubkeyAsAddress        bool   `long:"parse-subkey-as-address" description:"Try parsing subkeys as addresses"`
+	ParseSubkeyAsHash           bool   `long:"parse-subkey-as-hash" description:"Try parsing subkeys as hashes"`
 	Limit                       uint   `long:"limit" description:"Limit processing with given amount of rows"`
 	Interactive                 bool   `short:"i" long:"interactive" description:"Interactive mode"`
 	Verbose                     bool   `short:"v" long:"verbose" description:"Verbose mode"`

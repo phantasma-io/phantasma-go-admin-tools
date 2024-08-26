@@ -6,6 +6,7 @@ import (
 	"slices"
 
 	"github.com/linxGnu/grocksdb"
+	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/util"
 )
 
 type ListKeysWithUnknownBaseKeysVisitor struct {
@@ -84,7 +85,23 @@ func (v *ListUniqueSubKeysVisitor) Visit(it *grocksdb.Iterator) bool {
 
 	if i == -1 {
 		v.FoundSubKeys = append(v.FoundSubKeys, subkey)
-		fmt.Println(string(subkey))
+		if appOpts.ParseSubkeyAsAddress {
+			success, parsed := util.ParseAsAddress(subkey, false)
+			if success {
+				fmt.Println(parsed)
+			} else {
+				fmt.Println(string(subkey))
+			}
+		} else if appOpts.ParseSubkeyAsHash {
+			success, parsed := util.ParseAsHash(subkey, false)
+			if success {
+				fmt.Println(parsed)
+			} else {
+				fmt.Println(string(subkey))
+			}
+		} else {
+			fmt.Println(string(subkey))
+		}
 	}
 
 	key.Free()

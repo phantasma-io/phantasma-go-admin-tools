@@ -10,4 +10,4 @@ cd ./bin
 # >1 2>&1
 
 #./rocksdb-storage-reader -p ~/github/phantasma/phantasma-storage-data -l -f=chain.main --base-key=GHOST.serie9997 # --list-keys-with-unknown-sub-keys
-./rocksdb-storage-reader -p ~/github/phantasma/phantasma-storage-data -l -f=chain.main --base-key=.interop._swapMap --list-unique-sub-keys -v
+./rocksdb-storage-reader -p ~/github/phantasma/phantasma-storage-data -l -f=chain.main --base-key=.interop._swapMap --list-unique-sub-keys -v --parse-subkey-as-hash
