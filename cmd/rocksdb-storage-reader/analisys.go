@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"slices"
 
 	"github.com/linxGnu/grocksdb"
 )
@@ -50,6 +51,39 @@ func (v *ListKeysWithUnknownSubKeysVisitor) Visit(it *grocksdb.Iterator) bool {
 	}
 	if !isKnown {
 		fmt.Println(string(key.Data()))
+	}
+
+	key.Free()
+	return true
+}
+
+type ListUniqueSubKeysVisitor struct {
+	baseKey      []byte
+	FoundSubKeys [][]byte
+	OverallFound int
+}
+
+func (v *ListUniqueSubKeysVisitor) Visit(it *grocksdb.Iterator) bool {
+	key := it.Key()
+
+	if !bytes.HasPrefix(key.Data(), v.baseKey) {
+		key.Free()
+		return true
+	}
+
+	v.OverallFound++
+
+	subkeySrc := key.Data()[len(v.baseKey):]
+	subkey := make([]byte, len(subkeySrc))
+	copy(subkey, subkeySrc)
+
+	i := slices.IndexFunc(v.FoundSubKeys, func(b []byte) bool {
+		return bytes.Compare(b, subkey) == 0
+	})
+
+	if i == -1 {
+		v.FoundSubKeys = append(v.FoundSubKeys, subkey)
+		fmt.Println(string(subkey))
 	}
 
 	key.Free()

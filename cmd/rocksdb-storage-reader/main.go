@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/jessevdk/go-flags"
 )
 
@@ -12,8 +14,10 @@ var appOpts struct {
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
 	ListKeysWithUnknownBaseKeys bool   `long:"list-keys-with-unknown-base-keys" description:"Show keys with unknown base keys"`
 	ListKeysWithUnknownSubKeys  bool   `long:"list-keys-with-unknown-sub-keys" description:"Show keys with unknown sub keys. base-key argument is mandatory if this flag is passed"`
+	ListUniqueSubKeys           bool   `long:"list-unique-sub-keys" description:"Show unique sub keys for given base key. base-key argument is mandatory if this flag is passed"`
 	Limit                       uint   `long:"limit" description:"Limit processing with given amount of rows"`
 	Interactive                 bool   `short:"i" long:"interactive" description:"Interactive mode"`
+	Verbose                     bool   `short:"v" long:"verbose" description:"Verbose mode"`
 }
 
 func main() {
@@ -36,6 +40,18 @@ func main() {
 		v := ListKeysWithUnknownSubKeysVisitor{baseKey: []byte(appOpts.BaseKey),
 			knownSubKeys: GetBytesForKnownSubKeys(BaseKey(appOpts.BaseKey), true)}
 		RocksdbDbRoVisit(appOpts.DbPath, appOpts.ColumnFamily, &v)
+		return
+	}
+
+	if appOpts.ListUniqueSubKeys {
+		v := ListUniqueSubKeysVisitor{baseKey: []byte(appOpts.BaseKey),
+			FoundSubKeys: [][]byte{},
+			OverallFound: 0}
+		RocksdbDbRoVisit(appOpts.DbPath, appOpts.ColumnFamily, &v)
+
+		if appOpts.Verbose {
+			fmt.Printf("Found %d unique keys out of %d keys overall\n", len(v.FoundSubKeys), v.OverallFound)
+		}
 		return
 	}
 
