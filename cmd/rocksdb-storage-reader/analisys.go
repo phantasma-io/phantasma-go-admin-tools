@@ -39,6 +39,7 @@ func (v *ListKeysWithUnknownSubKeysVisitor) Visit(it *grocksdb.Iterator) bool {
 	key := it.Key()
 
 	if !bytes.HasPrefix(key.Data(), v.baseKey) {
+		key.Free()
 		return true
 	}
 
@@ -107,6 +108,7 @@ func (v *LisContentsVisitor) Visit(it *grocksdb.Iterator) bool {
 	key := it.Key()
 
 	if v.KeyPrefix != nil && !bytes.HasPrefix(key.Data(), v.KeyPrefix) {
+		key.Free()
 		return true
 	}
 
