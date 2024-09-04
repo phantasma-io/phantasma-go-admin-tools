@@ -2,10 +2,8 @@ package main
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
 )
 
@@ -13,7 +11,7 @@ var appOpts struct {
 	DbPath                      string `short:"p" long:"db-path" description:"Path to Rocksdb database directory" required:"true"`
 	ColumnFamily                string `short:"f" long:"column-family" description:"Column family to open"`
 	ListColumnFamilies          bool   `long:"list-column-families" description:"Lists column families available in the database"`
-	ListContents                bool   `short:"l" long:"list-contents" description:"Lists contents of given column family"`
+	DumpData                    bool   `short:"d" long:"dump" description:"Dump data of given column family"`
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
 	ListKeysWithUnknownBaseKeys bool   `long:"list-keys-with-unknown-base-keys" description:"Show keys with unknown base keys"`
 	ListKeysWithUnknownSubKeys  bool   `long:"list-keys-with-unknown-sub-keys" description:"Show keys with unknown sub keys. base-key argument is mandatory if this flag is passed"`
@@ -78,39 +76,7 @@ func main() {
 		return
 	}
 
-	if appOpts.ListContents {
-		if appOpts.BaseKey == TokensList.String() {
-			c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
-
-			count, err := c.GetAsBigInt(storage.CountKey([]byte(appOpts.BaseKey)))
-			if err != nil {
-				panic(err)
-			}
-
-			o := NewOutput(OutputFormatFromString(appOpts.OutputFormat))
-
-			var one = big.NewInt(1)
-			for i := big.NewInt(0); i.Cmp(count) < 0; i.Add(i, one) {
-				v, err := c.Get(storage.ElementKey([]byte(appOpts.BaseKey), i))
-				if err != nil {
-					panic(err)
-				}
-
-				o.AddRecord(storage.ReadStringWithLengthByte(v))
-			}
-
-			o.Flush()
-
-			c.Destroy()
-		} else {
-			v := ListContentsVisitor{Limit: appOpts.Limit}
-			if appOpts.BaseKey != "" {
-				v.KeyPrefix = []byte(appOpts.BaseKey)
-			}
-
-			c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
-			c.Visit(&v)
-			c.Destroy()
-		}
+	if appOpts.DumpData {
+		dump()
 	}
 }
