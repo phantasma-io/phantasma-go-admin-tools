@@ -14,4 +14,4 @@ cd ./bin
 
 #./rocksdb-storage-reader -p $STORAGE -l -f=chain.main --base-key=GHOST.serie9997 # --list-keys-with-unknown-sub-keys
 #./rocksdb-storage-reader -p $STORAGE -l -f=chain.main --base-key=.interop._swapMap --list-unique-sub-keys -v --parse-subkey-as-hash
-./rocksdb-storage-reader -p $STORAGE -l -f=chain.main --base-key=.tokens.list
+./rocksdb-storage-reader -p $STORAGE -l --output-format=csv -f=chain.main --base-key=.tokens.list

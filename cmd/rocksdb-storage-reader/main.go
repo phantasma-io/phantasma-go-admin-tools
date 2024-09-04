@@ -20,6 +20,7 @@ var appOpts struct {
 	ListUniqueSubKeys           bool   `long:"list-unique-sub-keys" description:"Show unique sub keys for given base key. base-key argument is mandatory if this flag is passed"`
 	ParseSubkeyAsAddress        bool   `long:"parse-subkey-as-address" description:"Try parsing subkeys as addresses"`
 	ParseSubkeyAsHash           bool   `long:"parse-subkey-as-hash" description:"Try parsing subkeys as hashes"`
+	OutputFormat                string `long:"output-format" description:"Format to use for data output: CSV, JSON, PLAIN"`
 	Limit                       uint   `long:"limit" description:"Limit processing with given amount of rows"`
 	Interactive                 bool   `short:"i" long:"interactive" description:"Interactive mode"`
 	Verbose                     bool   `short:"v" long:"verbose" description:"Verbose mode"`
@@ -86,14 +87,19 @@ func main() {
 				panic(err)
 			}
 
+			o := NewOutput(OutputFormatFromString(appOpts.OutputFormat))
+
 			var one = big.NewInt(1)
 			for i := big.NewInt(0); i.Cmp(count) < 0; i.Add(i, one) {
 				v, err := c.Get(storage.ElementKey([]byte(appOpts.BaseKey), i))
 				if err != nil {
 					panic(err)
 				}
-				fmt.Println(string(v))
+
+				o.AddRecord(storage.ReadStringWithLengthByte(v))
 			}
+
+			o.Flush()
 
 			c.Destroy()
 		} else {
