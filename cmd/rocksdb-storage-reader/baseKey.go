@@ -200,6 +200,7 @@ var KnowSubKeys map[BaseKey][]string = map[BaseKey][]string{
 		".NKTR",
 		".SPE",
 		".SOUL",
+		".USDC",
 		".USDT",
 		".WAGS",
 		".WNDR"},

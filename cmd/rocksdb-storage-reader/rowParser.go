@@ -7,6 +7,7 @@ import (
 	"github.com/phantasma-io/phantasma-go/pkg/cryptography"
 	"github.com/phantasma-io/phantasma-go/pkg/domain/contract"
 	"github.com/phantasma-io/phantasma-go/pkg/io"
+	"github.com/phantasma-io/phantasma-go/pkg/util"
 )
 
 func GetBalanceTokenKey(tokenSubkey string) []byte {
@@ -45,22 +46,24 @@ func ParseRow(key []byte, value []byte) (string, bool) {
 		var tokenSymbol string
 		for _, t := range KnowSubKeys[Balances] {
 			k := GetBalanceTokenKey(t)
-			if bytes.HasPrefix(key, secondaryKey) {
+			if bytes.HasPrefix(key, k) {
 				secondaryKey = k
 				tokenSymbol = t
 			}
 		}
 
 		if secondaryKey == nil {
-			panic("Token is unknown")
+			secondaryKey = bytes.TrimPrefix(key, Balances.Bytes())
+
+			// Try to show first 4 symbols of unknown token symbol
+			panic("Token is unknown: '" + string(secondaryKey[0:4]) + "'")
 		}
 
 		secondaryKey = bytes.TrimPrefix(key, secondaryKey)
 		secondaryKey = bytes.Join([][]byte{{34}, secondaryKey}, []byte{})
 		address := io.Deserialize[*cryptography.Address](secondaryKey, &cryptography.Address{})
 
-		br := *io.NewBinReaderFromBuf(value)
-		number := br.ReadBigInteger()
+		number := util.BigIntFromCsharpOrPhantasmaByteArray(value)
 
 		return Balances.String() + ": " + tokenSymbol + ": " + address.String() + " = " + number.String(), true
 	}
