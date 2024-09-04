@@ -108,13 +108,13 @@ func (v *ListUniqueSubKeysVisitor) Visit(it *grocksdb.Iterator) bool {
 	return true
 }
 
-type LisContentsVisitor struct {
+type ListContentsVisitor struct {
 	KeyPrefix    []byte
 	Limit        uint
 	limitCounter uint
 }
 
-func (v *LisContentsVisitor) Visit(it *grocksdb.Iterator) bool {
+func (v *ListContentsVisitor) Visit(it *grocksdb.Iterator) bool {
 	if v.Limit > 0 && v.limitCounter == v.Limit {
 		return false
 	}

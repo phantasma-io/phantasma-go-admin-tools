@@ -7,6 +7,7 @@ import (
 	"github.com/linxGnu/grocksdb"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/console"
+	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
 	"github.com/phantasma-io/phantasma-go/pkg/cryptography"
 	"github.com/phantasma-io/phantasma-go/pkg/io"
 )
@@ -50,7 +51,9 @@ func listBalancesForAddress(addressStr string) {
 	}
 
 	v := ListBalancesForAddressVisitor{keys: keys, labels: KnowSubKeys[Balances]}
-	RocksdbDbRoVisit(appOpts.DbPath, appOpts.ColumnFamily, &v)
+	c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
+	c.Visit(&v)
+	c.Destroy()
 }
 
 type GetNameForAddressVisitor struct {
@@ -84,7 +87,9 @@ func getNameForAddress(addressStr string) {
 	addressBytes := io.Serialize[*cryptography.Address](&address)
 
 	v := GetNameForAddressVisitor{key: GetAccountAddressMapKey(addressBytes)}
-	RocksdbDbRoVisit(appOpts.DbPath, appOpts.ColumnFamily, &v)
+	c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
+	c.Visit(&v)
+	c.Destroy()
 }
 
 func interactiveMainMenu() {

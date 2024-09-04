@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
+	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
 )
 
 var appOpts struct {
@@ -34,22 +37,34 @@ func main() {
 	}
 
 	if appOpts.ListKeysWithUnknownBaseKeys {
+		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
+
 		v := ListKeysWithUnknownBaseKeysVisitor{knownBaseKeysBytes: GetBytesForKnownBaseKeys()}
-		RocksdbDbRoVisit(appOpts.DbPath, appOpts.ColumnFamily, &v)
+		c.Visit(&v)
+
+		c.Destroy()
 		return
 	}
 	if appOpts.ListKeysWithUnknownSubKeys {
+		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
+
 		v := ListKeysWithUnknownSubKeysVisitor{baseKey: []byte(appOpts.BaseKey),
 			knownSubKeys: GetBytesForKnownSubKeys(BaseKey(appOpts.BaseKey), true)}
-		RocksdbDbRoVisit(appOpts.DbPath, appOpts.ColumnFamily, &v)
+		c.Visit(&v)
+
+		c.Destroy()
 		return
 	}
 
 	if appOpts.ListUniqueSubKeys {
+		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
+
 		v := ListUniqueSubKeysVisitor{baseKey: []byte(appOpts.BaseKey),
 			FoundSubKeys: [][]byte{},
 			OverallFound: 0}
-		RocksdbDbRoVisit(appOpts.DbPath, appOpts.ColumnFamily, &v)
+		c.Visit(&v)
+
+		c.Destroy()
 
 		if appOpts.Verbose {
 			fmt.Printf("Found %d unique keys out of %d keys overall\n", len(v.FoundSubKeys), v.OverallFound)
@@ -58,15 +73,38 @@ func main() {
 	}
 
 	if appOpts.ListColumnFamilies {
-		RocksdbListColumnFamilies(appOpts.DbPath)
+		rocksdb.ListColumnFamilies(appOpts.DbPath)
 		return
 	}
 
 	if appOpts.ListContents {
-		v := LisContentsVisitor{Limit: appOpts.Limit}
-		if appOpts.BaseKey != "" {
-			v.KeyPrefix = []byte(appOpts.BaseKey)
+		if appOpts.BaseKey == TokensList.String() {
+			c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
+
+			count, err := c.GetAsBigInt(storage.CountKey([]byte(appOpts.BaseKey)))
+			if err != nil {
+				panic(err)
+			}
+
+			var one = big.NewInt(1)
+			for i := big.NewInt(0); i.Cmp(count) < 0; i.Add(i, one) {
+				v, err := c.Get(storage.ElementKey([]byte(appOpts.BaseKey), i))
+				if err != nil {
+					panic(err)
+				}
+				fmt.Println(string(v))
+			}
+
+			c.Destroy()
+		} else {
+			v := ListContentsVisitor{Limit: appOpts.Limit}
+			if appOpts.BaseKey != "" {
+				v.KeyPrefix = []byte(appOpts.BaseKey)
+			}
+
+			c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
+			c.Visit(&v)
+			c.Destroy()
 		}
-		RocksdbDbRoVisit(appOpts.DbPath, appOpts.ColumnFamily, &v)
 	}
 }
