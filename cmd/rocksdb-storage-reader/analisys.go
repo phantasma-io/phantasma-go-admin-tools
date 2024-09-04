@@ -107,35 +107,3 @@ func (v *ListUniqueSubKeysVisitor) Visit(it *grocksdb.Iterator) bool {
 	key.Free()
 	return true
 }
-
-type ListContentsVisitor struct {
-	KeyPrefix    []byte
-	Limit        uint
-	limitCounter uint
-}
-
-func (v *ListContentsVisitor) Visit(it *grocksdb.Iterator) bool {
-	if v.Limit > 0 && v.limitCounter == v.Limit {
-		return false
-	}
-	if v.Limit > 0 {
-		v.limitCounter++
-	}
-
-	key := it.Key()
-
-	if v.KeyPrefix != nil && !bytes.HasPrefix(key.Data(), v.KeyPrefix) {
-		key.Free()
-		return true
-	}
-
-	value := it.Value()
-	//fmt.Printf("Key: %s Value: %v\n", string(key.Data()), value.Data())
-	parsed, _ := ParseRow(key.Data(), value.Data())
-	fmt.Println(parsed)
-
-	key.Free()
-	value.Free()
-
-	return true
-}

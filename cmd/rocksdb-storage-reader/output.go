@@ -38,9 +38,10 @@ func OutputFormatFromString(outputFormat string) OutputFormat {
 }
 
 type Output struct {
-	format  OutputFormat
-	csv     *csv.Writer
-	records []string
+	format     OutputFormat
+	csv        *csv.Writer
+	records    []string
+	anyRecords []any
 }
 
 func (o *Output) Init(format OutputFormat) {
@@ -49,8 +50,10 @@ func (o *Output) Init(format OutputFormat) {
 	if o.format == CSV {
 		o.csv = csv.NewWriter(io.Writer(os.Stdout))
 		o.records = []string{}
+		o.anyRecords = []any{}
 	} else if o.format == JSON {
 		o.records = []string{}
+		o.anyRecords = []any{}
 	}
 }
 
@@ -61,7 +64,7 @@ func NewOutput(format OutputFormat) *Output {
 	return o
 }
 
-func (o *Output) AddRecord(r string) {
+func (o *Output) AddStringRecord(r string) {
 	if o.format == CSV || o.format == JSON {
 		o.records = append(o.records, r)
 	} else if o.format == PLAIN {
@@ -69,12 +72,30 @@ func (o *Output) AddRecord(r string) {
 	}
 }
 
+func (o *Output) AddAnyRecord(r fmt.Stringer) {
+	if o.format == CSV {
+		o.records = append(o.records, r.String())
+	} else if o.format == JSON {
+		o.anyRecords = append(o.anyRecords, r)
+	} else if o.format == PLAIN {
+		fmt.Println(r)
+	}
+}
+
 func (o *Output) Flush() {
 	if o.format == CSV {
-		o.csv.Write(o.records)
+		o.csv.Write([]string(o.records))
+
 		o.csv.Flush()
 	} else if o.format == JSON {
-		row, err := json.Marshal(o.records)
+		var row []byte
+		var err error
+		if len(o.records) > 0 {
+			row, err = json.Marshal(o.records)
+		} else {
+			row, err = json.Marshal(o.anyRecords)
+		}
+
 		if err != nil {
 			panic(err)
 		}

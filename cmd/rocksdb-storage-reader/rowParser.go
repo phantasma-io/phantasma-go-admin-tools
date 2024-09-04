@@ -7,17 +7,9 @@ import (
 	"github.com/phantasma-io/phantasma-go/pkg/cryptography"
 	"github.com/phantasma-io/phantasma-go/pkg/domain/contract"
 	"github.com/phantasma-io/phantasma-go/pkg/io"
-	"github.com/phantasma-io/phantasma-go/pkg/util"
 )
 
-func GetBalanceTokenKey(tokenSubkey string) []byte {
-	key := Balances.Bytes()
-	key = append(key, []byte(tokenSubkey)...)
-
-	return key
-}
-
-func GetBalanceTokenAddressKey(address []byte, tokenSubkey string) []byte {
+func GetBalanceTokenAddressKey(address []byte, tokenSubkey []byte) []byte {
 	key := GetBalanceTokenKey(tokenSubkey)
 	key = append(key, address...)
 
@@ -38,34 +30,6 @@ func ParseRow(key []byte, value []byte) (string, bool) {
 		address := io.Deserialize[*cryptography.Address](secondaryKey, &cryptography.Address{})
 		// TODO value has some prefix, to fix
 		return AccountAddressMap.String() + "." + address.String() + ": " + string(value), true
-	}
-
-	if bytes.HasPrefix(key, Balances.Bytes()) {
-
-		var secondaryKey []byte
-		var tokenSymbol string
-		for _, t := range KnowSubKeys[Balances] {
-			k := GetBalanceTokenKey(t)
-			if bytes.HasPrefix(key, k) {
-				secondaryKey = k
-				tokenSymbol = t
-			}
-		}
-
-		if secondaryKey == nil {
-			secondaryKey = bytes.TrimPrefix(key, Balances.Bytes())
-
-			// Try to show first 4 symbols of unknown token symbol
-			panic("Token is unknown: '" + string(secondaryKey[0:4]) + "'")
-		}
-
-		secondaryKey = bytes.TrimPrefix(key, secondaryKey)
-		secondaryKey = bytes.Join([][]byte{{34}, secondaryKey}, []byte{})
-		address := io.Deserialize[*cryptography.Address](secondaryKey, &cryptography.Address{})
-
-		number := util.BigIntFromCsharpOrPhantasmaByteArray(value)
-
-		return Balances.String() + ": " + tokenSymbol + ": " + address.String() + " = " + number.String(), true
 	}
 
 	if bytes.HasPrefix(key, []byte("GHOST.serie")) {

@@ -14,4 +14,5 @@ cd ./bin
 
 #./rocksdb-storage-reader -p $STORAGE -d -f=chain.main --base-key=GHOST.serie9997 # --list-keys-with-unknown-sub-keys
 #./rocksdb-storage-reader -p $STORAGE -d -f=chain.main --base-key=.interop._swapMap --list-unique-sub-keys -v --parse-subkey-as-hash
-./rocksdb-storage-reader -p $STORAGE -d --output-format=csv -f=chain.main --base-key=.tokens.list
+#./rocksdb-storage-reader -p $STORAGE -d --output-format=csv -f=chain.main --base-key=.tokens.list
+./rocksdb-storage-reader -p $STORAGE -d --output-format=json -f=chain.main --base-key=.balances --subkeys=SOUL,KCAL,USD,CROWN,NEO,GAS,ETH,MKNI,TTRS,GOATI,GHOST,DANK,GAME,USDT,SEM,USDC,DAI,DYT,LEET,BNB,HOD,SPECC,BRC,SPE,WNDR,NKTR,GM,GFNFT,SNFT,SMNFT,WAGS

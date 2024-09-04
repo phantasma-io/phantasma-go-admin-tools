@@ -47,7 +47,7 @@ func listBalancesForAddress(addressStr string) {
 
 	keys := make([][]byte, len(KnowSubKeys[Balances]))
 	for i, t := range KnowSubKeys[Balances] {
-		keys[i] = GetBalanceTokenAddressKey(addressBytes, t)
+		keys[i] = GetBalanceTokenAddressKey(addressBytes, []byte(t))
 	}
 
 	v := ListBalancesForAddressVisitor{keys: keys, labels: KnowSubKeys[Balances]}

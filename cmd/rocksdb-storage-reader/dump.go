@@ -2,6 +2,7 @@ package main
 
 import (
 	"math/big"
+	"strings"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
@@ -25,20 +26,34 @@ func dump() {
 				panic(err)
 			}
 
-			o.AddRecord(storage.ReadStringWithLengthByte(v))
+			o.AddAnyRecord(storage.ReadStringWithLengthByte(v))
 		}
 
 		o.Flush()
 
 		c.Destroy()
 	} else {
-		v := ListContentsVisitor{Limit: appOpts.Limit}
+		v := DumpDataVisitor{Limit: appOpts.Limit}
 		if appOpts.BaseKey != "" {
 			v.KeyPrefix = []byte(appOpts.BaseKey)
 		}
+		if appOpts.SubKeys != "" {
+			subkeys := strings.Split(appOpts.SubKeys, ",")
+			v.SubKeys = [][]byte{}
+			for _, s := range subkeys {
+				v.SubKeys = append(v.SubKeys, []byte(s))
+			}
+			v.PanicOnUnknownSubkey = appOpts.PanicOnUnknownSubkey
+
+			v.KeyPrefix = []byte(appOpts.BaseKey)
+		}
+
+		v.output = NewOutput(OutputFormatFromString(appOpts.OutputFormat))
 
 		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
 		c.Visit(&v)
 		c.Destroy()
+
+		v.output.Flush()
 	}
 }
