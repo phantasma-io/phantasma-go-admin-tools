@@ -26,7 +26,7 @@ func dump() {
 				panic(err)
 			}
 
-			o.AddAnyRecord(storage.ReadStringWithLengthByte(v))
+			o.AddStringRecord(storage.ReadStringWithLengthByte(v))
 		}
 
 		o.Flush()
