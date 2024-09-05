@@ -38,15 +38,20 @@ func dump() {
 			v.KeyPrefix = []byte(appOpts.BaseKey)
 		}
 		if appOpts.SubKeys != "" {
-			subkeys := strings.Split(appOpts.SubKeys, ",")
-			v.SubKeys = [][]byte{}
-			for _, s := range subkeys {
-				v.SubKeys = append(v.SubKeys, []byte(s))
+			subkeys1 := strings.Split(appOpts.SubKeys, ",")
+			v.SubKeys1 = [][]byte{}
+			for _, s := range subkeys1 {
+				v.SubKeys1 = append(v.SubKeys1, []byte(s))
 			}
-			v.PanicOnUnknownSubkey = appOpts.PanicOnUnknownSubkey
-
-			v.KeyPrefix = []byte(appOpts.BaseKey)
 		}
+		if appOpts.SubKeys2 != "" {
+			subkeys2 := strings.Split(appOpts.SubKeys2, ",")
+			v.SubKeys2 = [][]byte{}
+			for _, s := range subkeys2 {
+				v.SubKeys2 = append(v.SubKeys2, []byte(s))
+			}
+		}
+		v.PanicOnUnknownSubkey = appOpts.PanicOnUnknownSubkey
 
 		v.output = NewOutput(OutputFormatFromString(appOpts.OutputFormat))
 

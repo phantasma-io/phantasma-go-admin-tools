@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
+	"github.com/phantasma-io/phantasma-go/pkg/cryptography"
 )
 
 func CombineKeys(baseKey, subKey, sep []byte) []byte {
@@ -15,7 +16,6 @@ func CombineKeys(baseKey, subKey, sep []byte) []byte {
 		key = append(key, subKey...)
 		return key
 	}
-
 }
 
 func MatchWithAnySubKey(key, baseKey []byte, subkeys [][]byte, sep []byte) ([]byte, []byte) {
@@ -33,9 +33,20 @@ func MatchWithAnySubKey(key, baseKey []byte, subkeys [][]byte, sep []byte) ([]by
 	return nil, nil
 }
 
-func DumpRow(key []byte, value []byte, subkeys [][]byte, panicOnUnknownSubkey bool) (fmt.Stringer, bool) {
+func MatchWithAnyAddressKey(key []byte, keys [][]byte) bool {
+	for _, k := range keys {
+		a, _ := cryptography.FromString(string(k))
+		if bytes.Compare(key, a.Bytes()) == 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
+func DumpRow(key []byte, value []byte, subkeys1, subkeys2 [][]byte, panicOnUnknownSubkey bool) (fmt.Stringer, bool) {
 	if bytes.HasPrefix(key, Balances.Bytes()) {
-		tokenSymbol, keyReminder := MatchWithAnySubKey(key, Balances.Bytes(), subkeys, []byte{'.'})
+		tokenSymbol, keyReminder := MatchWithAnySubKey(key, Balances.Bytes(), subkeys1, []byte{'.'})
 
 		if tokenSymbol == nil {
 			if !panicOnUnknownSubkey {
@@ -45,6 +56,10 @@ func DumpRow(key []byte, value []byte, subkeys [][]byte, panicOnUnknownSubkey bo
 
 			// Try to show first 4 symbols of unknown token symbol
 			panic("Token is unknown: '" + string(key[0:4]) + "'")
+		}
+
+		if len(subkeys2) > 0 && !MatchWithAnyAddressKey(keyReminder, subkeys2) {
+			return storage.KeyValue{}, false
 		}
 
 		address := storage.ReadAddressWithoutLengthByte(keyReminder)

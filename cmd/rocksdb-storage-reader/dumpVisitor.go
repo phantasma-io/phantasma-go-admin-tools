@@ -8,7 +8,8 @@ import (
 
 type DumpDataVisitor struct {
 	KeyPrefix            []byte
-	SubKeys              [][]byte
+	SubKeys1             [][]byte
+	SubKeys2             [][]byte
 	PanicOnUnknownSubkey bool
 	Limit                uint
 	limitCounter         uint
@@ -31,7 +32,7 @@ func (v *DumpDataVisitor) Visit(it *grocksdb.Iterator) bool {
 	}
 
 	valueSlice := it.Value()
-	result, success := DumpRow(keySlice.Data(), valueSlice.Data(), v.SubKeys, v.PanicOnUnknownSubkey)
+	result, success := DumpRow(keySlice.Data(), valueSlice.Data(), v.SubKeys1, v.SubKeys2, v.PanicOnUnknownSubkey)
 	if success {
 		v.output.AddAnyRecord(result)
 	}
