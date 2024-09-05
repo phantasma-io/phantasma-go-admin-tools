@@ -25,7 +25,6 @@ var appOpts struct {
 	ParseSubkeyAsHash           bool   `long:"parse-subkey-as-hash" description:"Try parsing subkeys as hashes"`
 	OutputFormat                string `long:"output-format" description:"Format to use for data output: CSV, JSON, PLAIN"`
 	Limit                       uint   `long:"limit" description:"Limit processing with given amount of rows"`
-	Interactive                 bool   `short:"i" long:"interactive" description:"Interactive mode"`
 	Verbose                     bool   `short:"v" long:"verbose" description:"Verbose mode"`
 }
 
@@ -33,11 +32,6 @@ func main() {
 	_, err := flags.Parse(&appOpts)
 	if err != nil {
 		panic(err)
-	}
-
-	if appOpts.Interactive {
-		interactiveMainMenu()
-		return
 	}
 
 	if appOpts.ListKeysWithUnknownBaseKeys {
