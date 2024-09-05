@@ -12,6 +12,7 @@ var appOpts struct {
 	ColumnFamily                string `short:"f" long:"column-family" description:"Column family to open"`
 	ListColumnFamilies          bool   `long:"list-column-families" description:"Lists column families available in the database"`
 	DumpData                    bool   `short:"d" long:"dump" description:"Dump data of given column family"`
+	DumpBalances                bool   `long:"dump-balances" description:"Dump balances of all fungible tokens for all addresses"`
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
 	SubKeys                     string `long:"subkeys" description:"Subkeys for given base key which needs to be dumped (coma-separated)"`
 	SubKeys2                    string `long:"subkeys2" description:"2nd level subkeys for given base key and subkeys which needs to be dumped (coma-separated)"`
@@ -79,7 +80,7 @@ func main() {
 		return
 	}
 
-	if appOpts.DumpData {
+	if appOpts.DumpData || appOpts.DumpBalances {
 		dump()
 	}
 }

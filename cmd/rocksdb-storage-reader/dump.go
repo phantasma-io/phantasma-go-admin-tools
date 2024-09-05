@@ -34,9 +34,13 @@ func dump() {
 		c.Destroy()
 	} else {
 		v := DumpDataVisitor{Limit: appOpts.Limit}
-		if appOpts.BaseKey != "" {
+
+		if appOpts.DumpBalances {
+			v.KeyPrefix = []byte(Balances)
+		} else if appOpts.BaseKey != "" {
 			v.KeyPrefix = []byte(appOpts.BaseKey)
 		}
+
 		if appOpts.SubKeys != "" {
 			subkeys1 := strings.Split(appOpts.SubKeys, ",")
 			v.SubKeys1 = [][]byte{}
