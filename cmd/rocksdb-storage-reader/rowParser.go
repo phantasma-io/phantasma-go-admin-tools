@@ -10,7 +10,7 @@ import (
 )
 
 func GetBalanceTokenAddressKey(address []byte, tokenSubkey []byte) []byte {
-	key := GetBalanceTokenKey(tokenSubkey)
+	key := CombineKeys(Balances.Bytes(), tokenSubkey, []byte{'.'})
 	key = append(key, address...)
 
 	return key
