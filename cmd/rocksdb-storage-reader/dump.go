@@ -35,7 +35,9 @@ func dump() {
 	} else {
 		v := DumpDataVisitor{Limit: appOpts.Limit}
 
-		if appOpts.DumpBalances {
+		if appOpts.DumpAddresses {
+			v.KeyPrefix = []byte(AccountAddressMap)
+		} else if appOpts.DumpBalances {
 			v.KeyPrefix = []byte(Balances)
 		} else if appOpts.BaseKey != "" {
 			v.KeyPrefix = []byte(appOpts.BaseKey)

@@ -33,10 +33,14 @@ func MatchWithAnySubKey(key, baseKey []byte, subkeys [][]byte, sep []byte) ([]by
 	return nil, nil
 }
 
-func MatchWithAnyAddressKey(key []byte, keys [][]byte) bool {
+func MatchWithAnyAddressKey(key []byte, keys [][]byte, addressWithLengthByte bool) bool {
 	for _, k := range keys {
 		a, _ := cryptography.FromString(string(k))
-		if bytes.Compare(key, a.Bytes()) == 0 {
+		if addressWithLengthByte {
+			if bytes.Compare(key, a.BytesPrefixed()) == 0 {
+				return true
+			}
+		} else if bytes.Compare(key, a.Bytes()) == 0 {
 			return true
 		}
 	}
@@ -45,7 +49,17 @@ func MatchWithAnyAddressKey(key []byte, keys [][]byte) bool {
 }
 
 func DumpRow(key []byte, value []byte, subkeys1, subkeys2 [][]byte, panicOnUnknownSubkey bool) (fmt.Stringer, bool) {
-	if bytes.HasPrefix(key, Balances.Bytes()) {
+	if bytes.HasPrefix(key, AccountAddressMap.Bytes()) {
+		keyReminder := bytes.TrimPrefix(key, AccountAddressMap.Bytes())
+
+		if len(subkeys1) > 0 && !MatchWithAnyAddressKey(keyReminder, subkeys1, true) {
+			return storage.KeyValue{}, false
+		}
+
+		address := storage.ReadAddressWithLengthByte(keyReminder)
+		name := storage.ReadStringWithLengthByte(value)
+		return storage.Address{Address: address.String(), Name: name}, true
+	} else if bytes.HasPrefix(key, Balances.Bytes()) {
 		tokenSymbol, keyReminder := MatchWithAnySubKey(key, Balances.Bytes(), subkeys1, []byte{'.'})
 
 		if tokenSymbol == nil {
@@ -58,7 +72,7 @@ func DumpRow(key []byte, value []byte, subkeys1, subkeys2 [][]byte, panicOnUnkno
 			panic("Token is unknown: '" + string(key[0:4]) + "'")
 		}
 
-		if len(subkeys2) > 0 && !MatchWithAnyAddressKey(keyReminder, subkeys2) {
+		if len(subkeys2) > 0 && !MatchWithAnyAddressKey(keyReminder, subkeys2, false) {
 			return storage.KeyValue{}, false
 		}
 

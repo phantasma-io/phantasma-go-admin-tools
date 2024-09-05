@@ -14,9 +14,13 @@ func ReadStringWithLengthByte(value []byte) string {
 	return br.ReadString()
 }
 
+func ReadAddressWithLengthByte(value []byte) *cryptography.Address {
+	return io.Deserialize[*cryptography.Address](value, &cryptography.Address{})
+}
+
 func ReadAddressWithoutLengthByte(value []byte) *cryptography.Address {
 	value = bytes.Join([][]byte{{34}, value}, []byte{})
-	return io.Deserialize[*cryptography.Address](value, &cryptography.Address{})
+	return ReadAddressWithLengthByte(value)
 }
 
 func ReadBigIntWithoutLengthByte(value []byte) *big.Int {

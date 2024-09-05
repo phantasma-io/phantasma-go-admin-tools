@@ -15,4 +15,5 @@ cd ./bin
 #./rocksdb-storage-reader -p $STORAGE -d -f=chain.main --base-key=GHOST.serie9997 # --list-keys-with-unknown-sub-keys
 #./rocksdb-storage-reader -p $STORAGE -d -f=chain.main --base-key=.interop._swapMap --list-unique-sub-keys -v --parse-subkey-as-hash
 #./rocksdb-storage-reader -p $STORAGE -d --output-format=csv -f=chain.main --base-key=.tokens.list
-./rocksdb-storage-reader -p $STORAGE --dump-balances --output-format=json -f=chain.main --subkeys=SOUL,KCAL,USD,CROWN,NEO,GAS,ETH,MKNI,TTRS,GOATI,GHOST,DANK,GAME,USDT,SEM,USDC,DAI,DYT,LEET,BNB,HOD,SPECC,BRC,SPE,WNDR,NKTR,GM,GFNFT,SNFT,SMNFT,WAGS #--subkeys2=P2K5fzTcq6RdLoc5ehYix4MiHPUX2xBo7micbwFCtJ8Q5si
+#./rocksdb-storage-reader -p $STORAGE --dump-balances --output-format=json -f=chain.main --subkeys=SOUL,KCAL,USD,CROWN,NEO,GAS,ETH,MKNI,TTRS,GOATI,GHOST,DANK,GAME,USDT,SEM,USDC,DAI,DYT,LEET,BNB,HOD,SPECC,BRC,SPE,WNDR,NKTR,GM,GFNFT,SNFT,SMNFT,WAGS #--subkeys2=P2K5fzTcq6RdLoc5ehYix4MiHPUX2xBo7micbwFCtJ8Q5si
+./rocksdb-storage-reader -p $STORAGE --dump-addresses --output-format=json -f=chain.main #--subkeys=P2K5fzTcq6RdLoc5ehYix4MiHPUX2xBo7micbwFCtJ8Q5si
