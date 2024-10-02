@@ -70,6 +70,109 @@ func idRemove(ids *[]string, id string, processingDirection ProcessingDirection)
 	}
 }
 
+func applyEventToAccountState(e response.EventResult,
+	previousEvent *response.EventResult,
+	a *response.AccountResult,
+	processingDirection ProcessingDirection) {
+
+	eventKind := event.Unknown
+	eventKind.SetString(e.Kind)
+
+	var eventData *event.TokenEventData
+	if !eventKind.IsTokenEvent() {
+		return
+	}
+
+	// Decode event data into event.TokenEventData structure
+	decoded, _ := hex.DecodeString(e.Data)
+	eventData = io.Deserialize[*event.TokenEventData](decoded, &event.TokenEventData{})
+
+	if e.Address != a.Address {
+		return
+	}
+
+	t := GetChainToken(eventData.Symbol)
+
+	tokenBalance := a.GetTokenBalance(t)
+
+	currentSoulStaked := big.NewInt(0)
+	if a.Stake != "" {
+		currentSoulStaked.SetString(a.Stake, 10)
+	}
+
+	currentAmount, _ := big.NewInt(0).SetString(tokenBalance.Amount, 10)
+
+	if t.IsFungible() {
+		switch eventKind {
+		// Processing unstaked balance
+		case event.TokenReceive:
+			tokenBalance.Amount = amountAdd(currentAmount, eventData.Value, processingDirection).String()
+		case event.TokenSend:
+			tokenBalance.Amount = amountSub(currentAmount, eventData.Value, processingDirection).String()
+
+		// Process staking
+		// For now we process stakes for SOUL only, ignoring isStakable() flag
+		case event.TokenStake:
+			if t.IsStakable() { // We assume it's SOUL token
+				if previousEvent == nil || previousEvent.Data != e.Data { // Checking for duplicated stake event (workaround for chain bug)
+					tokenBalance.Amount = amountSub(currentAmount, eventData.Value, processingDirection).String()
+					a.Stake = amountAdd(currentSoulStaked, eventData.Value, processingDirection).String()
+				}
+			} else {
+				// For KCAL we stake amount which equals to max fee value
+				tokenBalance.Amount = amountSub(currentAmount, eventData.Value, processingDirection).String()
+			}
+
+		case event.TokenClaim:
+			if t.IsStakable() { // We assume it's SOUL token
+				tokenBalance.Amount = amountAdd(currentAmount, eventData.Value, processingDirection).String()
+				a.Stake = amountSub(currentSoulStaked, eventData.Value, processingDirection).String()
+			} else { // KCAL claim
+				tokenBalance.Amount = amountAdd(currentAmount, eventData.Value, processingDirection).String()
+				// We can't properly track account.Unclaimed here, it needs to be calculated
+			}
+
+		case event.TokenBurn:
+			tokenBalance.Amount = amountSub(currentAmount, eventData.Value, processingDirection).String()
+
+		case event.TokenMint:
+			tokenBalance.Amount = amountAdd(currentAmount, eventData.Value, processingDirection).String()
+		}
+	} else {
+		switch eventKind {
+		case event.TokenReceive:
+			tokenBalance.Amount = amountAdd(currentAmount, big.NewInt(1), processingDirection).String()
+			idAdd(&tokenBalance.Ids, eventData.Value.String(), processingDirection)
+
+		case event.TokenSend:
+			tokenBalance.Amount = amountSub(currentAmount, big.NewInt(1), processingDirection).String()
+			idRemove(&tokenBalance.Ids, eventData.Value.String(), processingDirection)
+
+		case event.TokenBurn:
+			tokenBalance.Amount = amountSub(currentAmount, big.NewInt(1), processingDirection).String()
+			idRemove(&tokenBalance.Ids, eventData.Value.String(), processingDirection)
+
+		case event.TokenMint:
+			tokenBalance.Amount = amountAdd(currentAmount, big.NewInt(1), processingDirection).String()
+			idAdd(&tokenBalance.Ids, eventData.Value.String(), processingDirection)
+		}
+	}
+}
+
+func applyEventsToAccountState(es []response.EventResult, a *response.AccountResult, processingDirection ProcessingDirection) {
+	for ei, e := range es {
+		var previousEvent *response.EventResult
+		if ei > 0 {
+			previousEvent = &es[ei-1]
+		}
+
+		applyEventToAccountState(e,
+			previousEvent,
+			a,
+			processingDirection)
+	}
+}
+
 // TODO Work in progress
 // txs should be ordered from first tx to last
 // processingDirection == Forward: We are moving from first tx to last
@@ -100,7 +203,7 @@ func TrackAccountStateByEvents(txs []response.TransactionResult, accountAddress 
 		// Skip failed trasactions
 		if !txs[i].StateIsSuccess() {
 			// State din't change, saving previous one
-			perTxAccountBalances[i] = *account
+			perTxAccountBalances[i] = *account.Clone()
 
 			if processingDirection == Forward {
 				i += 1
@@ -111,88 +214,7 @@ func TrackAccountStateByEvents(txs []response.TransactionResult, accountAddress 
 			continue
 		}
 
-		for ei, e := range txs[i].Events {
-			eventKind := event.Unknown
-			eventKind.SetString(e.Kind)
-
-			var eventData *event.TokenEventData
-			if eventKind.IsTokenEvent() {
-				// Decode event data into event.TokenEventData structure
-				decoded, _ := hex.DecodeString(e.Data)
-				eventData = io.Deserialize[*event.TokenEventData](decoded, &event.TokenEventData{})
-
-				if e.Address != accountAddress {
-					continue
-				}
-
-				t := GetChainToken(eventData.Symbol)
-
-				tokenBalance := account.GetTokenBalance(t)
-
-				currentSoulStaked := big.NewInt(0)
-				if account.Stake != "" {
-					currentSoulStaked.SetString(account.Stake, 10)
-				}
-
-				currentAmount, _ := big.NewInt(0).SetString(tokenBalance.Amount, 10)
-
-				if t.IsFungible() {
-					switch eventKind {
-					// Processing unstaked balance
-					case event.TokenReceive:
-						tokenBalance.Amount = amountAdd(currentAmount, eventData.Value, processingDirection).String()
-					case event.TokenSend:
-						tokenBalance.Amount = amountSub(currentAmount, eventData.Value, processingDirection).String()
-
-					// Process staking
-					// For now we process stakes for SOUL only, ignoring isStakable() flag
-					case event.TokenStake:
-						if t.IsStakable() { // We assume it's SOUL token
-							if ei > 0 && txs[i].Events[ei-1].Data != e.Data { // Checking for duplicated stake event (workaround for chain bug)
-								tokenBalance.Amount = amountSub(currentAmount, eventData.Value, processingDirection).String()
-								account.Stake = amountAdd(currentSoulStaked, eventData.Value, processingDirection).String()
-							}
-						} else {
-							// For KCAL we stake amount which equals to max fee value
-							tokenBalance.Amount = amountSub(currentAmount, eventData.Value, processingDirection).String()
-						}
-
-					case event.TokenClaim:
-						if t.IsStakable() { // We assume it's SOUL token
-							tokenBalance.Amount = amountAdd(currentAmount, eventData.Value, processingDirection).String()
-							account.Stake = amountSub(currentSoulStaked, eventData.Value, processingDirection).String()
-						} else { // KCAL claim
-							tokenBalance.Amount = amountAdd(currentAmount, eventData.Value, processingDirection).String()
-							// We can't properly track account.Unclaimed here, it needs to be calculated
-						}
-
-					case event.TokenBurn:
-						tokenBalance.Amount = amountSub(currentAmount, eventData.Value, processingDirection).String()
-
-					case event.TokenMint:
-						tokenBalance.Amount = amountAdd(currentAmount, eventData.Value, processingDirection).String()
-					}
-				} else {
-					switch eventKind {
-					case event.TokenReceive:
-						tokenBalance.Amount = amountAdd(currentAmount, big.NewInt(1), processingDirection).String()
-						idAdd(&tokenBalance.Ids, eventData.Value.String(), processingDirection)
-
-					case event.TokenSend:
-						tokenBalance.Amount = amountSub(currentAmount, big.NewInt(1), processingDirection).String()
-						idRemove(&tokenBalance.Ids, eventData.Value.String(), processingDirection)
-
-					case event.TokenBurn:
-						tokenBalance.Amount = amountSub(currentAmount, big.NewInt(1), processingDirection).String()
-						idRemove(&tokenBalance.Ids, eventData.Value.String(), processingDirection)
-
-					case event.TokenMint:
-						tokenBalance.Amount = amountAdd(currentAmount, big.NewInt(1), processingDirection).String()
-						idAdd(&tokenBalance.Ids, eventData.Value.String(), processingDirection)
-					}
-				}
-			}
-		}
+		applyEventsToAccountState(txs[i].Events, account, processingDirection)
 
 		perTxAccountBalances[i] = *account.Clone()
 
