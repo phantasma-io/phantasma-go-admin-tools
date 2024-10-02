@@ -173,56 +173,37 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 	}
 }
 
+func applyTransactionToAccountState(tx response.TransactionResult, a *response.AccountResult, processingDirection ProcessingDirection) {
+	// Skip failed trasactions
+	if !tx.StateIsSuccess() {
+		// State din't change, saving previous one
+		return
+	}
+
+	applyEventsToAccountState(tx.Events, a, processingDirection)
+}
+
 // TODO Work in progress
 // txs should be ordered from first tx to last
 // processingDirection == Forward: We are moving from first tx to last
 // processingDirection == Backward: We are moving from last tx to first
 // TrackAccountStateByEvents: Modifies account to the latest state using events in transactions, also returns account state array for each transaction
-func TrackAccountStateByEvents(txs []response.TransactionResult, accountAddress string,
+func TrackAccountStateByEvents(txs []response.TransactionResult,
 	account *response.AccountResult, processingDirection ProcessingDirection) *[]response.AccountResult {
 
 	perTxAccountBalances := make([]response.AccountResult, len(txs), len(txs))
 
-	account.Address = accountAddress
-
-	// Calculate balance
-	i := 0
-	if processingDirection == Forward {
-		i = 0
-	} else {
-		i = len(txs) - 1
-	}
-
-	for {
-		if processingDirection == Forward && i == len(txs) {
-			break
-		} else if i < 0 {
-			break
-		}
-
-		// Skip failed trasactions
-		if !txs[i].StateIsSuccess() {
-			// State din't change, saving previous one
-			perTxAccountBalances[i] = *account.Clone()
-
-			if processingDirection == Forward {
-				i += 1
-			} else {
-				i -= 1
-			}
-
-			continue
-		}
-
-		applyEventsToAccountState(txs[i].Events, account, processingDirection)
-
-		perTxAccountBalances[i] = *account.Clone()
-
+	for i := range txs {
+		var tx response.TransactionResult
 		if processingDirection == Forward {
-			i += 1
+			tx = txs[i]
 		} else {
-			i -= 1
+			tx = txs[len(txs)-1-i]
 		}
+
+		applyTransactionToAccountState(tx, account, processingDirection)
+		a := account.Clone()
+		perTxAccountBalances[i] = *a
 	}
 
 	return &perTxAccountBalances

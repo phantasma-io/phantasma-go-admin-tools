@@ -60,7 +60,8 @@ func printTransactions(address string, filterSymbol string, orderDirection analy
 	slices.Reverse(transactions)
 
 	var account response.AccountResult
-	perTxAccountBalances := analysis.TrackAccountStateByEvents(transactions, address, &account, analysis.Forward)
+	account.Address = address
+	perTxAccountBalances := analysis.TrackAccountStateByEvents(transactions, &account, analysis.Forward)
 
 	transactionIndexes := makeRange(1, len(transactions))
 
