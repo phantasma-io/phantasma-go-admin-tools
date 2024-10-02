@@ -15,8 +15,8 @@ github.com/mailru/easyjson v0.7.7 h1:UGYAvKxe3sBsEDzO8ZeWOSlIQfWFlxbzLZe7hwFURr0
 github.com/mailru/easyjson v0.7.7/go.mod h1:xzfreul335JAWq5oZzymOObrkdz5UnU4kGfJJLY9Nlc=
 github.com/mr-tron/base58 v1.2.0 h1:T/HDJBh4ZCPbU39/+c3rRvE0uKBQlU27+QI8LJ4t64o=
 github.com/mr-tron/base58 v1.2.0/go.mod h1:BinMc/sQntlIE1frQmRFPUoPA1Zkr8VRgBdjWI2mNwc=
-github.com/phantasma-io/phantasma-go v0.0.0-20241002142907-eb1ea24706c5 h1:3MCRXPTke62/BBXI1MJfTqkYcXvfBKM+WJp2NAeZafU=
-github.com/phantasma-io/phantasma-go v0.0.0-20241002142907-eb1ea24706c5/go.mod h1:x67OoS2N07WHmR6vnutY5ZeiTdrqOLBBtjgiFjTsQMA=
+github.com/phantasma-io/phantasma-go v0.0.0-20241002204645-464dd9f23d2f h1:Eq9ga9oUkTWLKleb7b961x+do7mBc5IMSHEQ7yV3U+8=
+github.com/phantasma-io/phantasma-go v0.0.0-20241002204645-464dd9f23d2f/go.mod h1:x67OoS2N07WHmR6vnutY5ZeiTdrqOLBBtjgiFjTsQMA=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsTg=
