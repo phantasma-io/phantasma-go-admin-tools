@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"slices"
 
@@ -73,7 +74,7 @@ func idRemove(ids *[]string, id string, processingDirection ProcessingDirection)
 func applyEventToAccountState(e response.EventResult,
 	previousEvent *response.EventResult,
 	a *response.AccountResult,
-	processingDirection ProcessingDirection) {
+	processingDirection ProcessingDirection, tx string) {
 
 	eventKind := event.Unknown
 	eventKind.SetString(e.Kind)
@@ -117,6 +118,8 @@ func applyEventToAccountState(e response.EventResult,
 				if previousEvent == nil || previousEvent.Data != e.Data { // Checking for duplicated stake event (workaround for chain bug)
 					tokenBalance.Amount = amountSub(currentAmount, eventData.Value, processingDirection).String()
 					a.Stake = amountAdd(currentSoulStaked, eventData.Value, processingDirection).String()
+				} else {
+					fmt.Println("Check tx: " + tx)
 				}
 			} else {
 				// For KCAL we stake amount which equals to max fee value
@@ -159,17 +162,20 @@ func applyEventToAccountState(e response.EventResult,
 	}
 }
 
-func applyEventsToAccountState(es []response.EventResult, a *response.AccountResult, processingDirection ProcessingDirection) {
+func applyEventsToAccountState(es []response.EventResult, a *response.AccountResult, processingDirection ProcessingDirection, tx string) {
 	for ei, e := range es {
 		var previousEvent *response.EventResult
 		if ei > 0 {
 			previousEvent = &es[ei-1]
+			if previousEvent.Address != a.Address {
+				previousEvent = nil
+			}
 		}
 
 		applyEventToAccountState(e,
 			previousEvent,
 			a,
-			processingDirection)
+			processingDirection, tx)
 	}
 }
 
@@ -180,7 +186,7 @@ func applyTransactionToAccountState(tx response.TransactionResult, a *response.A
 		return
 	}
 
-	applyEventsToAccountState(tx.Events, a, processingDirection)
+	applyEventsToAccountState(tx.Events, a, processingDirection, tx.Hash)
 }
 
 // TODO Work in progress
@@ -204,6 +210,39 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 		applyTransactionToAccountState(tx, account, processingDirection)
 		a := account.Clone()
 		perTxAccountBalances[i] = *a
+	}
+
+	return &perTxAccountBalances
+}
+
+func TrackAccountStateByEventsAndCurrentState(txs []response.TransactionResult,
+	account *response.AccountResult, processingDirection ProcessingDirection) *[]response.AccountResult {
+
+	perTxAccountBalances := make([]response.AccountResult, len(txs)+1, len(txs)+1)
+
+	for i := range txs {
+		var tx response.TransactionResult
+		if processingDirection == Forward {
+			tx = txs[i]
+		} else {
+			tx = txs[len(txs)-1-i]
+		}
+
+		a := account.Clone()
+		if processingDirection == Forward {
+			perTxAccountBalances[i] = *a
+		} else {
+			perTxAccountBalances[len(txs)-1-i] = *a
+		}
+
+		applyTransactionToAccountState(tx, account, processingDirection)
+	}
+
+	a := account.Clone()
+	if processingDirection == Forward {
+		perTxAccountBalances[len(txs)-1] = *a
+	} else {
+		perTxAccountBalances[0] = *a
 	}
 
 	return &perTxAccountBalances

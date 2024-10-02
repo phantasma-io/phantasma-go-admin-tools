@@ -19,6 +19,7 @@ var appOpts struct {
 	TokenSymbol     string `long:"symbol" description:"Token symbol to track balance"`
 	ShowFungible    bool   `long:"show-fungible" description:"Show fungible token events and balances"`
 	ShowNonfungible bool   `long:"show-nonfungible" description:"Show nonfungible token events and balances"`
+	GetInitialState bool   `long:"get-initial-state" description:"Get initial state of address by replaying transactions in reverse order"`
 	Interactive     bool   `short:"i" long:"interactive" description:"Interactive mode"`
 }
 
@@ -64,6 +65,10 @@ func main() {
 		}
 		analysis.InitChainTokens(client)
 
-		printTransactions(appOpts.Address, appOpts.TokenSymbol, appOpts.ordering, false, appOpts.ShowFungible, appOpts.ShowNonfungible)
+		if appOpts.GetInitialState {
+			printOriginalState(appOpts.Address)
+		} else {
+			printTransactions(appOpts.Address, appOpts.TokenSymbol, appOpts.ordering, false, appOpts.ShowFungible, appOpts.ShowNonfungible)
+		}
 	}
 }

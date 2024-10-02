@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"slices"
 
@@ -40,6 +41,17 @@ func getAllAddressTransactions(address string) []response.TransactionResult {
 	}
 
 	return txs
+}
+
+func getCurrentAddressState(address string) response.AccountResult {
+	// Calling "GetAddressTransactionCount" method to get transactions for the address
+	var err error
+	account, err := client.GetAccountEx(address)
+	if err != nil {
+		panic("GetAccountEx call failed! Error: " + err.Error())
+	}
+
+	return account
 }
 
 func makeRange(min, max int) []int {
@@ -91,4 +103,37 @@ func printTransactions(address string, filterSymbol string, orderDirection analy
 			break
 		}
 	}
+}
+
+func printOriginalState(address string) {
+	if address == "" {
+		panic("Address should be set")
+	}
+
+	account := getCurrentAddressState(address)
+	transactions = getAllAddressTransactions(address)
+
+	// removing txes which are not in s.Txs list
+	newLength := 0
+	for index := range transactions {
+		if slices.Contains(account.Txs, transactions[index].Hash) {
+			transactions[newLength] = transactions[index]
+			newLength++
+		}
+	}
+	// reslice the array to remove extra index
+	transactions = transactions[:newLength]
+
+	slices.Reverse(transactions)
+
+	perTxAccountBalances := analysis.TrackAccountStateByEventsAndCurrentState(transactions, &account, analysis.Backward)
+
+	initialState := (*perTxAccountBalances)[0]
+
+	body, err := json.Marshal(initialState)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Print(string(body))
 }
