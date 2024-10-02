@@ -21,8 +21,8 @@ build: build-account-analyzer build-rocksdb-storage-reader
 clean:
     go clean -cache
     go clean -testcache
-    rm bin/account-analyzer
-    rm bin/rocksdb-storage-reader
+    rm -f bin/account-analyzer
+    rm -f bin/rocksdb-storage-reader
 
 [group('test')]
 test:
