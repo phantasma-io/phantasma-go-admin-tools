@@ -18,6 +18,14 @@ const (
 	Backward ProcessingDirection = 2
 )
 
+type StakeClaimType uint
+
+const (
+	Normal      StakeClaimType = 1
+	MarketEvent StakeClaimType = 2
+	SmReward    StakeClaimType = 3
+)
+
 func arrayHasEmpoty(a []string) bool {
 	for _, s := range a {
 		if s == "" {
@@ -74,7 +82,7 @@ func idRemove(ids *[]string, id string, processingDirection ProcessingDirection)
 func applyEventToAccountState(e response.EventResult,
 	previousEvent *response.EventResult,
 	a *response.AccountResult,
-	processingDirection ProcessingDirection, tx string, stakingIsRelatedToMarketEvent bool) {
+	processingDirection ProcessingDirection, tx string, stakeClaimType StakeClaimType) {
 
 	eventKind := event.Unknown
 	eventKind.SetString(e.Kind)
@@ -117,7 +125,7 @@ func applyEventToAccountState(e response.EventResult,
 			if t.IsStakable() { // We assume it's SOUL token
 				if previousEvent == nil || previousEvent.Data != e.Data { // Checking for duplicated stake event (workaround for chain bug)
 					tokenBalance.Amount = amountSub(currentAmount, eventData.Value, processingDirection).String()
-					if !stakingIsRelatedToMarketEvent { // We need to exclude staking related to events like "OrderFilled" or "OrderBid"
+					if stakeClaimType == Normal { // We need to exclude staking related to events like "OrderFilled" or "OrderBid"
 						a.Stake = amountAdd(currentSoulStaked, eventData.Value, processingDirection).String()
 					}
 
@@ -132,7 +140,9 @@ func applyEventToAccountState(e response.EventResult,
 		case event.TokenClaim:
 			if t.IsStakable() { // We assume it's SOUL token
 				tokenBalance.Amount = amountAdd(currentAmount, eventData.Value, processingDirection).String()
-				a.Stake = amountSub(currentSoulStaked, eventData.Value, processingDirection).String()
+				if stakeClaimType == Normal { // We need to exclude events related to SM rewards claiming and also claiming related to market events (payment when author's nft is being sold generates claim event)
+					a.Stake = amountSub(currentSoulStaked, eventData.Value, processingDirection).String()
+				}
 			} else { // KCAL claim
 				tokenBalance.Amount = amountAdd(currentAmount, eventData.Value, processingDirection).String()
 				// We can't properly track account.Unclaimed here, it needs to be calculated
@@ -166,7 +176,7 @@ func applyEventToAccountState(e response.EventResult,
 }
 
 func applyEventsToAccountState(es []response.EventResult, a *response.AccountResult, processingDirection ProcessingDirection, tx string) {
-	stakingIsRelatedToMarketEvent := false
+	stakeClaimType := Normal
 	for _, e := range es {
 		if e.Address != a.Address {
 			continue
@@ -175,17 +185,25 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 		eventKind := event.Unknown
 		eventKind.SetString(e.Kind)
 
-		if !eventKind.IsMarketEvent() {
-			continue
-		}
+		if eventKind.IsMarketEvent() {
+			// Decode event data into event.MarketEventData structure
+			decoded, _ := hex.DecodeString(e.Data)
+			eventData := io.Deserialize[*event.MarketEventData](decoded, &event.MarketEventData{})
 
-		// Decode event data into event.TokenEventData structure
-		decoded, _ := hex.DecodeString(e.Data)
-		eventData := io.Deserialize[*event.MarketEventData](decoded, &event.MarketEventData{})
+			if eventData.QuoteSymbol == "SOUL" {
+				stakeClaimType = MarketEvent
+				break
+			}
+		} else if eventKind == event.TokenMint {
+			// Decode event data into event.TokenEventData structure
+			decoded, _ := hex.DecodeString(e.Data)
+			eventData := io.Deserialize[*event.TokenEventData](decoded, &event.TokenEventData{})
 
-		if eventData.QuoteSymbol == "SOUL" {
-			stakingIsRelatedToMarketEvent = true
-			break
+			if eventData.Symbol == "SOUL" {
+				// TODO needs better detection but for now should work
+				stakeClaimType = SmReward
+				break
+			}
 		}
 	}
 
@@ -201,7 +219,7 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 		applyEventToAccountState(e,
 			previousEvent,
 			a,
-			processingDirection, tx, stakingIsRelatedToMarketEvent)
+			processingDirection, tx, stakeClaimType)
 	}
 }
 
