@@ -10,8 +10,6 @@ import (
 	"github.com/phantasma-io/phantasma-go/pkg/rpc/response"
 )
 
-var transactionCount int
-var transactions []response.TransactionResult
 var cfgShowFungible bool
 var cfgShowNonfungible bool
 var cfgPayloadFragment string
@@ -21,8 +19,7 @@ var cfgShowFailedTxes bool
 
 func getAllAddressTransactions(address string) []response.TransactionResult {
 	// Calling "GetAddressTransactionCount" method to get transactions for the address
-	var err error
-	transactionCount, err = client.GetAddressTransactionCount(address, "main")
+	transactionCount, err := client.GetAddressTransactionCount(address, "main")
 	if err != nil {
 		panic("GetAddressTransactionCount call failed! Error: " + err.Error())
 	}
@@ -107,22 +104,22 @@ func printOriginalState(address string) {
 	}
 
 	account := getCurrentAddressState(address)
-	transactions = getAllAddressTransactions(address)
+	txes := getAllAddressTransactions(address)
 
 	// removing txes which are not in s.Txs list
 	newLength := 0
-	for index := range transactions {
-		if slices.Contains(account.Txs, transactions[index].Hash) {
-			transactions[newLength] = transactions[index]
+	for index := range txes {
+		if slices.Contains(account.Txs, txes[index].Hash) {
+			txes[newLength] = txes[index]
 			newLength++
 		}
 	}
 	// reslice the array to remove extra index
-	transactions = transactions[:newLength]
+	txes = txes[:newLength]
 
-	slices.Reverse(transactions)
+	slices.Reverse(txes)
 
-	perTxAccountBalances := analysis.TrackAccountStateByEventsAndCurrentState(transactions, &account, analysis.Backward)
+	perTxAccountBalances := analysis.TrackAccountStateByEventsAndCurrentState(txes, &account, analysis.Backward)
 
 	initialState := (*perTxAccountBalances)[0]
 
