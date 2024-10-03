@@ -1,11 +1,8 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/jessevdk/go-flags"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/analysis"
-	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/console"
 	"github.com/phantasma-io/phantasma-go/pkg/domain/event"
 	"github.com/phantasma-io/phantasma-go/pkg/rpc"
 )
@@ -24,7 +21,6 @@ var appOpts struct {
 	ShowFailedTxes  bool     `long:"show-failed" description:"Shows failed transactions"`
 	GetInitialState bool     `long:"get-initial-state" description:"Get initial state of address by replaying transactions in reverse order"`
 	GetStakingTxes  bool     `long:"get-staking-txes" description:"Get staking transaction hashes for address"`
-	Interactive     bool     `short:"i" long:"interactive" description:"Interactive mode"`
 }
 
 func main() {
@@ -41,55 +37,33 @@ func main() {
 		panic("Unknown value of 'order' argument: " + appOpts.Order)
 	}
 
-	if appOpts.Interactive {
-		if appOpts.Nexus == "" {
-			_, appOpts.Nexus = console.PromptIndexedMenu("SELECT TESTNET OR MAINNET", []string{"testnet", "mainnet"})
-
-			if appOpts.Nexus == "testnet" {
-				client = rpc.NewRPCTestnet()
-			} else {
-				client = rpc.NewRPCMainnet()
-			}
-		}
-
-		if appOpts.Address == "" {
-			appOpts.Address = console.PromptStringInput("Enter address: ")
-		}
-
-		tokenCount := analysis.InitChainTokens(client)
-		fmt.Println("Received information about", tokenCount, appOpts.Nexus, "tokens")
-
-		interactiveMainMenu()
-		return
+	if appOpts.Nexus == "testnet" {
+		client = rpc.NewRPCTestnet()
 	} else {
-		if appOpts.Nexus == "testnet" {
-			client = rpc.NewRPCTestnet()
-		} else {
-			client = rpc.NewRPCMainnet()
-		}
-		analysis.InitChainTokens(client)
+		client = rpc.NewRPCMainnet()
+	}
+	analysis.InitChainTokens(client)
 
-		cfgSymbol = appOpts.TokenSymbol
+	cfgSymbol = appOpts.TokenSymbol
 
-		for _, karg := range appOpts.EventKinds {
-			k := event.Unknown
-			k.SetString(karg)
+	for _, karg := range appOpts.EventKinds {
+		k := event.Unknown
+		k.SetString(karg)
 
-			cfgEventKinds = append(cfgEventKinds, k)
-		}
+		cfgEventKinds = append(cfgEventKinds, k)
+	}
 
-		cfgShowFungible = appOpts.ShowFungible
-		cfgShowNonfungible = appOpts.ShowNonfungible
+	cfgShowFungible = appOpts.ShowFungible
+	cfgShowNonfungible = appOpts.ShowNonfungible
 
-		cfgShowFailedTxes = appOpts.ShowFailedTxes
+	cfgShowFailedTxes = appOpts.ShowFailedTxes
 
-		if appOpts.GetInitialState {
-			printOriginalState(appOpts.Address)
-		} else if appOpts.GetStakingTxes {
-			cfgEventKinds = []event.EventKind{event.TokenStake}
-			printTransactions(appOpts.Address, false, appOpts.ordering)
-		} else {
-			printTransactions(appOpts.Address, true, appOpts.ordering)
-		}
+	if appOpts.GetInitialState {
+		printOriginalState(appOpts.Address)
+	} else if appOpts.GetStakingTxes {
+		cfgEventKinds = []event.EventKind{event.TokenStake}
+		printTransactions(appOpts.Address, false, appOpts.ordering)
+	} else {
+		printTransactions(appOpts.Address, true, appOpts.ordering)
 	}
 }
