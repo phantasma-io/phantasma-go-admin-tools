@@ -111,8 +111,9 @@ func DescribeTransaction(tx response.TransactionResult, perTxAccountBalance *res
 
 // Work in progress
 func DescribeTransactions(txs []response.TransactionResult, includedTxes []response.TransactionResult, perTxAccountBalances []response.AccountResult, txIndexes []int,
-	address, tokenSymbol, payloadFragment string, orderDirection OrderDirection, describeFungible, describeNonfungible bool, eventKinds []event.EventKind) string {
-	var result string
+	address, tokenSymbol, payloadFragment string, orderDirection OrderDirection, describeFungible, describeNonfungible bool, eventKinds []event.EventKind) []string {
+
+	var result []string
 
 	i := 0
 	if orderDirection == Asc {
@@ -141,9 +142,9 @@ func DescribeTransactions(txs []response.TransactionResult, includedTxes []respo
 		if includedTx {
 			txInfo, eventsInfo := DescribeTransaction(txs[i], &perTxAccountBalances[i], address, tokenSymbol, payloadFragment, describeFungible, describeNonfungible, eventKinds)
 			if len(eventsInfo) != 0 {
-				result += fmt.Sprintf("#%03d %s %s\n", txIndexes[i], time.Unix(int64(txs[i].Timestamp), 0).UTC().Format(time.RFC822), txInfo)
+				result = append(result, fmt.Sprintf("#%03d %s %s", txIndexes[i], time.Unix(int64(txs[i].Timestamp), 0).UTC().Format(time.RFC822), txInfo))
 				for _, e := range eventsInfo {
-					result += fmt.Sprintf("\t %s\n", e)
+					result = append(result, fmt.Sprintf("\t %s", e))
 				}
 			}
 		}

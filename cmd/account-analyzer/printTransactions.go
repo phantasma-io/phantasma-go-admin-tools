@@ -74,6 +74,8 @@ func printTransactions(address string, trackAccountState bool, orderDirection an
 	txes := getAllAddressTransactions(address)
 	includedTxes := analysis.GetTransactionsByKind(txes, address, cfgSymbol, cfgPayloadFragment, cfgEventKinds, cfgShowFailedTxes)
 
+	var rowsToPrint []string
+
 	if trackAccountState {
 		slices.Reverse(txes)
 
@@ -83,17 +85,19 @@ func printTransactions(address string, trackAccountState bool, orderDirection an
 
 		transactionIndexes := makeRange(1, len(txes))
 
-		fmt.Print(
-			analysis.DescribeTransactions(txes,
-				includedTxes,
-				*perTxAccountBalances,
-				transactionIndexes,
-				address, cfgSymbol, cfgPayloadFragment, orderDirection, cfgShowFungible, cfgShowNonfungible, cfgEventKinds))
+		rowsToPrint = analysis.DescribeTransactions(txes,
+			includedTxes,
+			*perTxAccountBalances,
+			transactionIndexes,
+			address, cfgSymbol, cfgPayloadFragment, orderDirection, cfgShowFungible, cfgShowNonfungible, cfgEventKinds)
 	} else {
 		for _, t := range includedTxes {
-			fmt.Print(t.Hash)
-			fmt.Println()
+			rowsToPrint = append(rowsToPrint, t.Hash)
 		}
+	}
+
+	for _, r := range rowsToPrint {
+		fmt.Println(r)
 	}
 }
 
