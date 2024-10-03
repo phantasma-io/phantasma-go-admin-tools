@@ -141,11 +141,14 @@ func DescribeTransactions(txs []response.TransactionResult, includedTxes []respo
 
 		if includedTx {
 			txInfo, eventsInfo := DescribeTransaction(txs[i], &perTxAccountBalances[i], address, tokenSymbol, payloadFragment, describeFungible, describeNonfungible, eventKinds)
+			var txBlock string
 			if len(eventsInfo) != 0 {
-				result = append(result, fmt.Sprintf("#%03d %s %s", txIndexes[i], time.Unix(int64(txs[i].Timestamp), 0).UTC().Format(time.RFC822), txInfo))
+				txBlock += fmt.Sprintf("#%03d %s %s", txIndexes[i], time.Unix(int64(txs[i].Timestamp), 0).UTC().Format(time.RFC822), txInfo)
 				for _, e := range eventsInfo {
-					result = append(result, fmt.Sprintf("\t %s", e))
+					txBlock += fmt.Sprintf("\n\t %s", e)
 				}
+
+				result = append(result, txBlock)
 			}
 		}
 
