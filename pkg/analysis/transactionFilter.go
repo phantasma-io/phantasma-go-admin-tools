@@ -25,6 +25,10 @@ func CheckIfTransactionHasEvent(tx response.TransactionResult,
 		eventKind := event.Unknown
 		eventKind.SetString(e.Kind)
 
+		if len(eventKinds) != 0 && !slices.Contains(eventKinds, eventKind) {
+			continue
+		}
+
 		var eventData *event.TokenEventData
 		if eventKind.IsTokenEvent() {
 			// Decode event data into event.TokenEventData structure
@@ -39,10 +43,6 @@ func CheckIfTransactionHasEvent(tx response.TransactionResult,
 			payload := string(payloadBytes)
 
 			if payloadFragment != "" && payloadFragment != payload {
-				continue
-			}
-
-			if len(eventKinds) != 0 && !slices.Contains(eventKinds, eventKind) {
 				continue
 			}
 
