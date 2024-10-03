@@ -86,11 +86,15 @@ func printTransactions(address string, trackAccountState bool, orderDirection an
 			includedTxes,
 			*perTxAccountBalances,
 			transactionIndexes,
-			address, cfgSymbol, cfgPayloadFragment, orderDirection, cfgShowFungible, cfgShowNonfungible, cfgEventKinds)
+			address, cfgSymbol, cfgPayloadFragment, cfgShowFungible, cfgShowNonfungible, cfgEventKinds)
 	} else {
 		for _, t := range includedTxes {
 			rowsToPrint = append(rowsToPrint, t.Hash)
 		}
+	}
+
+	if orderDirection == analysis.Desc {
+		slices.Reverse(rowsToPrint)
 	}
 
 	for _, r := range rowsToPrint {

@@ -111,51 +111,32 @@ func DescribeTransaction(tx response.TransactionResult, perTxAccountBalance *res
 
 // Work in progress
 func DescribeTransactions(txs []response.TransactionResult, includedTxes []response.TransactionResult, perTxAccountBalances []response.AccountResult, txIndexes []int,
-	address, tokenSymbol, payloadFragment string, orderDirection OrderDirection, describeFungible, describeNonfungible bool, eventKinds []event.EventKind) []string {
+	address, tokenSymbol, payloadFragment string, describeFungible, describeNonfungible bool, eventKinds []event.EventKind) []string {
 
 	var result []string
 
-	i := 0
-	if orderDirection == Asc {
-		i = 0
-	} else {
-		i = len(txs) - 1
-	}
-
-	for {
-		if orderDirection == Asc && i == len(txs) {
-			break
-		} else if i < 0 {
-			break
-		}
-
+	for i, tx := range txs {
 		includedTx := true
 		if len(includedTxes) != 0 {
 			includedTx = false
 			for _, t := range includedTxes {
-				if t.Hash == txs[i].Hash {
+				if t.Hash == tx.Hash {
 					includedTx = true
 				}
 			}
 		}
 
 		if includedTx {
-			txInfo, eventsInfo := DescribeTransaction(txs[i], &perTxAccountBalances[i], address, tokenSymbol, payloadFragment, describeFungible, describeNonfungible, eventKinds)
+			txInfo, eventsInfo := DescribeTransaction(tx, &perTxAccountBalances[i], address, tokenSymbol, payloadFragment, describeFungible, describeNonfungible, eventKinds)
 			var txBlock string
 			if len(eventsInfo) != 0 {
-				txBlock += fmt.Sprintf("#%03d %s %s", txIndexes[i], time.Unix(int64(txs[i].Timestamp), 0).UTC().Format(time.RFC822), txInfo)
+				txBlock += fmt.Sprintf("#%03d %s %s", txIndexes[i], time.Unix(int64(tx.Timestamp), 0).UTC().Format(time.RFC822), txInfo)
 				for _, e := range eventsInfo {
 					txBlock += fmt.Sprintf("\n\t %s", e)
 				}
 
 				result = append(result, txBlock)
 			}
-		}
-
-		if orderDirection == Asc {
-			i += 1
-		} else {
-			i -= 1
 		}
 	}
 	return result
