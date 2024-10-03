@@ -16,7 +16,7 @@ var cfgShowFungible bool
 var cfgShowNonfungible bool
 var cfgPayloadFragment string
 var cfgSymbol string
-var cfgEventKind event.EventKind
+var cfgEventKinds []event.EventKind
 var cfgShowFailedTxes bool
 
 func getAllAddressTransactions(address string) []response.TransactionResult {
@@ -72,7 +72,7 @@ func printTransactions(address string, trackAccountState bool, orderDirection an
 	}
 
 	txes := getAllAddressTransactions(address)
-	includedTxes := analysis.GetTransactionsByKind(txes, address, cfgSymbol, cfgPayloadFragment, cfgEventKind, cfgShowFailedTxes)
+	includedTxes := analysis.GetTransactionsByKind(txes, address, cfgSymbol, cfgPayloadFragment, cfgEventKinds, cfgShowFailedTxes)
 
 	if trackAccountState {
 		slices.Reverse(txes)

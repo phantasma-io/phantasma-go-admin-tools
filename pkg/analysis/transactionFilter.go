@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"encoding/hex"
+	"slices"
 
 	"github.com/phantasma-io/phantasma-go/pkg/domain/event"
 	"github.com/phantasma-io/phantasma-go/pkg/io"
@@ -9,7 +10,7 @@ import (
 )
 
 func CheckIfTransactionHasEvent(tx response.TransactionResult,
-	address, tokenSymbol, payloadFragment string, k event.EventKind, showFailedTxes bool) bool {
+	address, tokenSymbol, payloadFragment string, eventKinds []event.EventKind, showFailedTxes bool) bool {
 
 	// Skip failed trasactions
 	if !tx.StateIsSuccess() && !showFailedTxes {
@@ -41,7 +42,7 @@ func CheckIfTransactionHasEvent(tx response.TransactionResult,
 				continue
 			}
 
-			if k != event.Unknown && eventKind != k {
+			if len(eventKinds) != 0 && !slices.Contains(eventKinds, eventKind) {
 				continue
 			}
 
@@ -53,11 +54,11 @@ func CheckIfTransactionHasEvent(tx response.TransactionResult,
 }
 
 func GetTransactionsByKind(txs []response.TransactionResult,
-	address, tokenSymbol, payloadFragment string, eventKind event.EventKind, showFailedTxes bool) []response.TransactionResult {
+	address, tokenSymbol, payloadFragment string, eventKinds []event.EventKind, showFailedTxes bool) []response.TransactionResult {
 	var result []response.TransactionResult
 
 	for i := 0; i < len(txs); i++ {
-		if CheckIfTransactionHasEvent(txs[i], address, tokenSymbol, payloadFragment, eventKind, showFailedTxes) {
+		if CheckIfTransactionHasEvent(txs[i], address, tokenSymbol, payloadFragment, eventKinds, showFailedTxes) {
 			result = append(result, txs[i])
 		}
 	}
