@@ -74,7 +74,7 @@ func idRemove(ids *[]string, id string, processingDirection ProcessingDirection)
 func applyEventToAccountState(e response.EventResult,
 	previousEvent *response.EventResult,
 	a *response.AccountResult,
-	processingDirection ProcessingDirection, tx string) {
+	processingDirection ProcessingDirection, tx string, stakingIsRelatedToMarketEvent bool) {
 
 	eventKind := event.Unknown
 	eventKind.SetString(e.Kind)
@@ -117,7 +117,10 @@ func applyEventToAccountState(e response.EventResult,
 			if t.IsStakable() { // We assume it's SOUL token
 				if previousEvent == nil || previousEvent.Data != e.Data { // Checking for duplicated stake event (workaround for chain bug)
 					tokenBalance.Amount = amountSub(currentAmount, eventData.Value, processingDirection).String()
-					a.Stake = amountAdd(currentSoulStaked, eventData.Value, processingDirection).String()
+					if !stakingIsRelatedToMarketEvent { // We need to exclude staking related to events like "OrderFilled" or "OrderBid"
+						a.Stake = amountAdd(currentSoulStaked, eventData.Value, processingDirection).String()
+					}
+
 				} else {
 					fmt.Println("Check tx: " + tx)
 				}
@@ -163,6 +166,29 @@ func applyEventToAccountState(e response.EventResult,
 }
 
 func applyEventsToAccountState(es []response.EventResult, a *response.AccountResult, processingDirection ProcessingDirection, tx string) {
+	stakingIsRelatedToMarketEvent := false
+	for _, e := range es {
+		if e.Address != a.Address {
+			continue
+		}
+
+		eventKind := event.Unknown
+		eventKind.SetString(e.Kind)
+
+		if !eventKind.IsMarketEvent() {
+			continue
+		}
+
+		// Decode event data into event.TokenEventData structure
+		decoded, _ := hex.DecodeString(e.Data)
+		eventData := io.Deserialize[*event.MarketEventData](decoded, &event.MarketEventData{})
+
+		if eventData.QuoteSymbol == "SOUL" {
+			stakingIsRelatedToMarketEvent = true
+			break
+		}
+	}
+
 	for ei, e := range es {
 		var previousEvent *response.EventResult
 		if ei > 0 {
@@ -175,7 +201,7 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 		applyEventToAccountState(e,
 			previousEvent,
 			a,
-			processingDirection, tx)
+			processingDirection, tx, stakingIsRelatedToMarketEvent)
 	}
 }
 
