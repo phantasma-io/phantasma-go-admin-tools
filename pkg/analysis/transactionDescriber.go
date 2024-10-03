@@ -137,3 +137,78 @@ func DescribeTransactions(txs []response.TransactionResult, perTxAccountBalances
 	}
 	return result
 }
+
+func CheckIfTransactionHasEvent(tx response.TransactionResult,
+	address, tokenSymbol, payloadFragment string, k event.EventKind) bool {
+
+	// Skip failed trasactions
+	if !tx.StateIsSuccess() {
+		return false
+	}
+
+	for _, e := range tx.Events {
+		if e.Address != address {
+			continue
+		}
+
+		eventKind := event.Unknown
+		eventKind.SetString(e.Kind)
+
+		var eventData *event.TokenEventData
+		if eventKind.IsTokenEvent() {
+			// Decode event data into event.TokenEventData structure
+			decoded, _ := hex.DecodeString(e.Data)
+			eventData = io.Deserialize[*event.TokenEventData](decoded, &event.TokenEventData{})
+
+			if tokenSymbol != "" && tokenSymbol != eventData.Symbol {
+				continue
+			}
+
+			payloadBytes, _ := hex.DecodeString(tx.Payload)
+			payload := string(payloadBytes)
+
+			if payloadFragment != "" && payloadFragment != payload {
+				continue
+			}
+
+			if eventKind != k {
+				continue
+			}
+
+			return true
+		}
+	}
+
+	return false
+}
+
+func GetTransactionsByKind(txs []response.TransactionResult,
+	address, tokenSymbol, payloadFragment string, orderDirection OrderDirection, eventKind event.EventKind) string {
+	var result string
+
+	i := 0
+	if orderDirection == Asc {
+		i = 0
+	} else {
+		i = len(txs) - 1
+	}
+
+	for {
+		if orderDirection == Asc && i == len(txs) {
+			break
+		} else if i < 0 {
+			break
+		}
+
+		if CheckIfTransactionHasEvent(txs[i], address, tokenSymbol, payloadFragment, eventKind) {
+			result += txs[i].Hash + "\n"
+		}
+
+		if orderDirection == Asc {
+			i += 1
+		} else {
+			i -= 1
+		}
+	}
+	return result
+}

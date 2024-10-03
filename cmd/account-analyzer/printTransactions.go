@@ -7,6 +7,7 @@ import (
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/analysis"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/console"
+	"github.com/phantasma-io/phantasma-go/pkg/domain/event"
 	"github.com/phantasma-io/phantasma-go/pkg/rpc/response"
 )
 
@@ -136,4 +137,16 @@ func printOriginalState(address string) {
 	}
 
 	fmt.Print(string(body))
+}
+
+func printStakingTxHashes(address, filterSymbol string, orderDirection analysis.OrderDirection) {
+	if address == "" {
+		panic("Address should be set")
+	}
+
+	transactions = getAllAddressTransactions(address)
+
+	fmt.Print(
+		analysis.GetTransactionsByKind(transactions,
+			address, filterSymbol, payloadFragment, orderDirection, event.TokenStake))
 }

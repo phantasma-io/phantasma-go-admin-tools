@@ -20,6 +20,7 @@ var appOpts struct {
 	ShowFungible    bool   `long:"show-fungible" description:"Show fungible token events and balances"`
 	ShowNonfungible bool   `long:"show-nonfungible" description:"Show nonfungible token events and balances"`
 	GetInitialState bool   `long:"get-initial-state" description:"Get initial state of address by replaying transactions in reverse order"`
+	GetStakingTxes  bool   `long:"get-staking-txes" description:"Get staking transaction hashes for address"`
 	Interactive     bool   `short:"i" long:"interactive" description:"Interactive mode"`
 }
 
@@ -67,6 +68,8 @@ func main() {
 
 		if appOpts.GetInitialState {
 			printOriginalState(appOpts.Address)
+		} else if appOpts.GetStakingTxes {
+			printStakingTxHashes(appOpts.Address, appOpts.TokenSymbol, appOpts.ordering)
 		} else {
 			printTransactions(appOpts.Address, appOpts.TokenSymbol, appOpts.ordering, false, appOpts.ShowFungible, appOpts.ShowNonfungible)
 		}
