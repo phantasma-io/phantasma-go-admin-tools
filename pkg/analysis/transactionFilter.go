@@ -9,10 +9,10 @@ import (
 )
 
 func CheckIfTransactionHasEvent(tx response.TransactionResult,
-	address, tokenSymbol, payloadFragment string, k event.EventKind) bool {
+	address, tokenSymbol, payloadFragment string, k event.EventKind, showFailedTxes bool) bool {
 
 	// Skip failed trasactions
-	if !tx.StateIsSuccess() {
+	if !tx.StateIsSuccess() && !showFailedTxes {
 		return false
 	}
 
@@ -41,7 +41,7 @@ func CheckIfTransactionHasEvent(tx response.TransactionResult,
 				continue
 			}
 
-			if eventKind != k {
+			if k != event.Unknown && eventKind != k {
 				continue
 			}
 
@@ -53,11 +53,11 @@ func CheckIfTransactionHasEvent(tx response.TransactionResult,
 }
 
 func GetTransactionsByKind(txs []response.TransactionResult,
-	address, tokenSymbol, payloadFragment string, eventKind event.EventKind) []response.TransactionResult {
+	address, tokenSymbol, payloadFragment string, eventKind event.EventKind, showFailedTxes bool) []response.TransactionResult {
 	var result []response.TransactionResult
 
 	for i := 0; i < len(txs); i++ {
-		if CheckIfTransactionHasEvent(txs[i], address, tokenSymbol, payloadFragment, eventKind) {
+		if CheckIfTransactionHasEvent(txs[i], address, tokenSymbol, payloadFragment, eventKind, showFailedTxes) {
 			result = append(result, txs[i])
 		}
 	}

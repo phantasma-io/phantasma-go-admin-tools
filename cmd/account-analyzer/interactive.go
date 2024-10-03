@@ -53,7 +53,7 @@ func interactiveMainMenu() {
 		case 1:
 			settingsMenu()
 		case 2:
-			printTransactions(appOpts.Address, appOpts.TokenSymbol, appOpts.ordering, pagination, appOpts.ShowFungible, appOpts.ShowNonfungible)
+			printTransactions(appOpts.Address, true, appOpts.ordering)
 		case 3:
 			logout = true
 		}

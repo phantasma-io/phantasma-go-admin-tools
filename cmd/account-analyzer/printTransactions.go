@@ -6,15 +6,18 @@ import (
 	"slices"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/analysis"
-	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/console"
 	"github.com/phantasma-io/phantasma-go/pkg/domain/event"
 	"github.com/phantasma-io/phantasma-go/pkg/rpc/response"
 )
 
 var transactionCount int
 var transactions []response.TransactionResult
-var pagination bool = true
-var payloadFragment string
+var cfgShowFungible bool
+var cfgShowNonfungible bool
+var cfgPayloadFragment string
+var cfgSymbol string
+var cfgEventKind event.EventKind
+var cfgShowFailedTxes bool
 
 func getAllAddressTransactions(address string) []response.TransactionResult {
 	// Calling "GetAddressTransactionCount" method to get transactions for the address
@@ -63,45 +66,33 @@ func makeRange(min, max int) []int {
 	return a
 }
 
-func printTransactions(address string, filterSymbol string, orderDirection analysis.OrderDirection, paginationEnabled, describeFungible, describeNonfungible bool) {
+func printTransactions(address string, trackAccountState bool, orderDirection analysis.OrderDirection) {
 	if address == "" {
 		panic("Address should be set")
 	}
 
-	transactions = getAllAddressTransactions(address)
+	txes := getAllAddressTransactions(address)
+	includedTxes := analysis.GetTransactionsByKind(txes, address, cfgSymbol, cfgPayloadFragment, cfgEventKind, cfgShowFailedTxes)
 
-	slices.Reverse(transactions)
+	if trackAccountState {
+		slices.Reverse(txes)
 
-	var account response.AccountResult
-	account.Address = address
-	perTxAccountBalances := analysis.TrackAccountStateByEvents(transactions, &account, analysis.Forward)
+		var account response.AccountResult
+		account.Address = address
+		perTxAccountBalances := analysis.TrackAccountStateByEvents(txes, &account, analysis.Forward)
 
-	transactionIndexes := makeRange(1, len(transactions))
+		transactionIndexes := makeRange(1, len(txes))
 
-	if paginationEnabled && orderDirection == analysis.Desc {
-		slices.Reverse(transactions)
-		slices.Reverse(transactionIndexes)
-	}
-
-	var pagination console.Pagination = console.Pagination{Enabled: paginationEnabled,
-		ItemCount:   uint(len(transactions)),
-		PageSize:    5,
-		CurrentPage: 1}
-
-	for {
-		fmt.Print("\n")
 		fmt.Print(
-			analysis.DescribeTransactions(console.Paginate(pagination, transactions),
-				console.Paginate(pagination, *perTxAccountBalances),
-				console.Paginate(pagination, transactionIndexes),
-				address, filterSymbol, payloadFragment, orderDirection, describeFungible, describeNonfungible))
-
-		if pagination.Enabled {
-			if !pagination.PaginationMenu() {
-				break
-			}
-		} else {
-			break
+			analysis.DescribeTransactions(txes,
+				includedTxes,
+				*perTxAccountBalances,
+				transactionIndexes,
+				address, cfgSymbol, cfgPayloadFragment, orderDirection, cfgShowFungible, cfgShowNonfungible))
+	} else {
+		for _, t := range includedTxes {
+			fmt.Print(t.Hash)
+			fmt.Println()
 		}
 	}
 }
@@ -137,20 +128,4 @@ func printOriginalState(address string) {
 	}
 
 	fmt.Print(string(body))
-}
-
-func printStakingTxHashes(address, filterSymbol string, orderDirection analysis.OrderDirection) {
-	if address == "" {
-		panic("Address should be set")
-	}
-
-	txes := getAllAddressTransactions(address)
-
-	txesResult := analysis.GetTransactionsByKind(txes,
-		address, filterSymbol, payloadFragment, event.TokenStake)
-
-	for _, t := range txesResult {
-		fmt.Print(t.Hash)
-		fmt.Println()
-	}
 }

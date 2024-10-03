@@ -6,6 +6,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/analysis"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/console"
+	"github.com/phantasma-io/phantasma-go/pkg/domain/event"
 	"github.com/phantasma-io/phantasma-go/pkg/rpc"
 )
 
@@ -17,8 +18,10 @@ var appOpts struct {
 	ordering        analysis.OrderDirection
 	Address         string `short:"a" long:"address" description:"Address to analyse"`
 	TokenSymbol     string `long:"symbol" description:"Token symbol to track balance"`
+	EventKind       string `long:"event-kind" description:"Filter out transactions which do not have this event"`
 	ShowFungible    bool   `long:"show-fungible" description:"Show fungible token events and balances"`
 	ShowNonfungible bool   `long:"show-nonfungible" description:"Show nonfungible token events and balances"`
+	ShowFailedTxes  bool   `long:"show-failed" description:"Shows failed transactions"`
 	GetInitialState bool   `long:"get-initial-state" description:"Get initial state of address by replaying transactions in reverse order"`
 	GetStakingTxes  bool   `long:"get-staking-txes" description:"Get staking transaction hashes for address"`
 	Interactive     bool   `short:"i" long:"interactive" description:"Interactive mode"`
@@ -66,12 +69,23 @@ func main() {
 		}
 		analysis.InitChainTokens(client)
 
+		cfgSymbol = appOpts.TokenSymbol
+
+		cfgEventKind = event.Unknown
+		cfgEventKind.SetString(appOpts.EventKind)
+
+		cfgShowFungible = appOpts.ShowFungible
+		cfgShowNonfungible = appOpts.ShowNonfungible
+
+		cfgShowFailedTxes = appOpts.ShowFailedTxes
+
 		if appOpts.GetInitialState {
 			printOriginalState(appOpts.Address)
 		} else if appOpts.GetStakingTxes {
-			printStakingTxHashes(appOpts.Address, appOpts.TokenSymbol, appOpts.ordering)
+			cfgEventKind = event.TokenStake
+			printTransactions(appOpts.Address, false, appOpts.ordering)
 		} else {
-			printTransactions(appOpts.Address, appOpts.TokenSymbol, appOpts.ordering, false, appOpts.ShowFungible, appOpts.ShowNonfungible)
+			printTransactions(appOpts.Address, true, appOpts.ordering)
 		}
 	}
 }

@@ -105,7 +105,7 @@ func DescribeTransaction(tx response.TransactionResult, perTxAccountBalance *res
 }
 
 // Work in progress
-func DescribeTransactions(txs []response.TransactionResult, perTxAccountBalances []response.AccountResult, txIndexes []int,
+func DescribeTransactions(txs []response.TransactionResult, includedTxes []response.TransactionResult, perTxAccountBalances []response.AccountResult, txIndexes []int,
 	address, tokenSymbol, payloadFragment string, orderDirection OrderDirection, describeFungible, describeNonfungible bool) string {
 	var result string
 
@@ -123,10 +123,22 @@ func DescribeTransactions(txs []response.TransactionResult, perTxAccountBalances
 			break
 		}
 
-		txInfo, eventsInfo := DescribeTransaction(txs[i], &perTxAccountBalances[i], address, tokenSymbol, payloadFragment, describeFungible, describeNonfungible)
-		result += fmt.Sprintf("#%03d %s %s\n", txIndexes[i], time.Unix(int64(txs[i].Timestamp), 0).UTC().Format(time.RFC822), txInfo)
-		for _, e := range eventsInfo {
-			result += fmt.Sprintf("\t %s\n", e)
+		includedTx := true
+		if len(includedTxes) != 0 {
+			includedTx = false
+			for _, t := range includedTxes {
+				if t.Hash == txs[i].Hash {
+					includedTx = true
+				}
+			}
+		}
+
+		if includedTx {
+			txInfo, eventsInfo := DescribeTransaction(txs[i], &perTxAccountBalances[i], address, tokenSymbol, payloadFragment, describeFungible, describeNonfungible)
+			result += fmt.Sprintf("#%03d %s %s\n", txIndexes[i], time.Unix(int64(txs[i].Timestamp), 0).UTC().Format(time.RFC822), txInfo)
+			for _, e := range eventsInfo {
+				result += fmt.Sprintf("\t %s\n", e)
+			}
 		}
 
 		if orderDirection == Asc {
