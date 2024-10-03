@@ -34,7 +34,7 @@ test-clean:
 
 [group('run')]
 run-account-analyzer: build-account-analyzer
-    go run ./cmd/account-analyzer -i --order=asc --show-fungible
+    sh run-account-analyzer.sh
 
 run-rocksdb-storage-reader: build-rocksdb-storage-reader
     go run ./cmd/rocksdb-storage-reader -p {{ STORAGE }} --dump-addresses --output-format=json -f=chain.main

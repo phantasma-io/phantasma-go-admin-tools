@@ -88,7 +88,7 @@ func printTransactions(address string, trackAccountState bool, orderDirection an
 				includedTxes,
 				*perTxAccountBalances,
 				transactionIndexes,
-				address, cfgSymbol, cfgPayloadFragment, orderDirection, cfgShowFungible, cfgShowNonfungible))
+				address, cfgSymbol, cfgPayloadFragment, orderDirection, cfgShowFungible, cfgShowNonfungible, cfgEventKinds))
 	} else {
 		for _, t := range includedTxes {
 			fmt.Print(t.Hash)

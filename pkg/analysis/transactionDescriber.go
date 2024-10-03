@@ -3,6 +3,7 @@ package analysis
 import (
 	"encoding/hex"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/format"
@@ -21,7 +22,7 @@ const (
 
 // Work in progress
 func DescribeTransaction(tx response.TransactionResult, perTxAccountBalance *response.AccountResult,
-	address, tokenSymbol, payloadFragment string, describeFungible, describeNonfungible bool) (string, []string) {
+	address, tokenSymbol, payloadFragment string, describeFungible, describeNonfungible bool, eventKinds []event.EventKind) (string, []string) {
 	txInfo := fmt.Sprintf("Hash: %s", tx.Hash)
 	eventsInfo := []string{}
 
@@ -38,6 +39,10 @@ func DescribeTransaction(tx response.TransactionResult, perTxAccountBalance *res
 
 		eventKind := event.Unknown
 		eventKind.SetString(e.Kind)
+
+		if len(eventKinds) != 0 && !slices.Contains(eventKinds, eventKind) {
+			continue
+		}
 
 		var eventData *event.TokenEventData
 		if eventKind.IsTokenEvent() {
@@ -106,7 +111,7 @@ func DescribeTransaction(tx response.TransactionResult, perTxAccountBalance *res
 
 // Work in progress
 func DescribeTransactions(txs []response.TransactionResult, includedTxes []response.TransactionResult, perTxAccountBalances []response.AccountResult, txIndexes []int,
-	address, tokenSymbol, payloadFragment string, orderDirection OrderDirection, describeFungible, describeNonfungible bool) string {
+	address, tokenSymbol, payloadFragment string, orderDirection OrderDirection, describeFungible, describeNonfungible bool, eventKinds []event.EventKind) string {
 	var result string
 
 	i := 0
@@ -134,10 +139,12 @@ func DescribeTransactions(txs []response.TransactionResult, includedTxes []respo
 		}
 
 		if includedTx {
-			txInfo, eventsInfo := DescribeTransaction(txs[i], &perTxAccountBalances[i], address, tokenSymbol, payloadFragment, describeFungible, describeNonfungible)
-			result += fmt.Sprintf("#%03d %s %s\n", txIndexes[i], time.Unix(int64(txs[i].Timestamp), 0).UTC().Format(time.RFC822), txInfo)
-			for _, e := range eventsInfo {
-				result += fmt.Sprintf("\t %s\n", e)
+			txInfo, eventsInfo := DescribeTransaction(txs[i], &perTxAccountBalances[i], address, tokenSymbol, payloadFragment, describeFungible, describeNonfungible, eventKinds)
+			if len(eventsInfo) != 0 {
+				result += fmt.Sprintf("#%03d %s %s\n", txIndexes[i], time.Unix(int64(txs[i].Timestamp), 0).UTC().Format(time.RFC822), txInfo)
+				for _, e := range eventsInfo {
+					result += fmt.Sprintf("\t %s\n", e)
+				}
 			}
 		}
 
