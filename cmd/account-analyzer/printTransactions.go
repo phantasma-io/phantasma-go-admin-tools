@@ -144,9 +144,13 @@ func printStakingTxHashes(address, filterSymbol string, orderDirection analysis.
 		panic("Address should be set")
 	}
 
-	transactions = getAllAddressTransactions(address)
+	txes := getAllAddressTransactions(address)
 
-	fmt.Print(
-		analysis.GetTransactionsByKind(transactions,
-			address, filterSymbol, payloadFragment, orderDirection, event.TokenStake))
+	txesResult := analysis.GetTransactionsByKind(txes,
+		address, filterSymbol, payloadFragment, event.TokenStake)
+
+	for _, t := range txesResult {
+		fmt.Print(t.Hash)
+		fmt.Println()
+	}
 }
