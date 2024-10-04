@@ -26,6 +26,11 @@ const (
 	SmReward    StakeClaimType = 3
 )
 
+type AccountState struct {
+	Tx    response.TransactionResult
+	State response.AccountResult
+}
+
 func arrayHasEmpoty(a []string) bool {
 	for _, s := range a {
 		if s == "" {
@@ -239,9 +244,9 @@ func applyTransactionToAccountState(tx response.TransactionResult, a *response.A
 // processingDirection == Backward: We are moving from last tx to first
 // TrackAccountStateByEvents: Modifies account to the latest state using events in transactions, also returns account state array for each transaction
 func TrackAccountStateByEvents(txs []response.TransactionResult,
-	account *response.AccountResult, processingDirection ProcessingDirection) *[]response.AccountResult {
+	account *response.AccountResult, processingDirection ProcessingDirection) *[]AccountState {
 
-	perTxAccountBalances := make([]response.AccountResult, len(txs), len(txs))
+	perTxAccountBalances := make([]AccountState, len(txs), len(txs))
 
 	for i := range txs {
 		var tx response.TransactionResult
@@ -253,16 +258,17 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 
 		applyTransactionToAccountState(tx, account, processingDirection)
 		a := account.Clone()
-		perTxAccountBalances[i] = *a
+		perTxAccountBalances[i].Tx = tx
+		perTxAccountBalances[i].State = *a
 	}
 
 	return &perTxAccountBalances
 }
 
 func TrackAccountStateByEventsAndCurrentState(txs []response.TransactionResult,
-	account *response.AccountResult, processingDirection ProcessingDirection) *[]response.AccountResult {
+	account *response.AccountResult, processingDirection ProcessingDirection) *[]AccountState {
 
-	perTxAccountBalances := make([]response.AccountResult, len(txs)+1, len(txs)+1)
+	perTxAccountBalances := make([]AccountState, len(txs)+1, len(txs)+1)
 
 	for i := range txs {
 		var tx response.TransactionResult
@@ -274,19 +280,22 @@ func TrackAccountStateByEventsAndCurrentState(txs []response.TransactionResult,
 
 		a := account.Clone()
 		if processingDirection == Forward {
-			perTxAccountBalances[i] = *a
+			perTxAccountBalances[i].Tx = tx
+			perTxAccountBalances[i].State = *a
 		} else {
-			perTxAccountBalances[len(txs)-i] = *a
+			perTxAccountBalances[len(txs)-i].Tx = tx
+			perTxAccountBalances[len(txs)-i].State = *a
 		}
 
 		applyTransactionToAccountState(tx, account, processingDirection)
 	}
 
+	// We are not setting tx here because it's an initial state of account without associated tx
 	a := account.Clone()
 	if processingDirection == Forward {
-		perTxAccountBalances[len(txs)] = *a
+		perTxAccountBalances[len(txs)].State = *a
 	} else {
-		perTxAccountBalances[0] = *a
+		perTxAccountBalances[0].State = *a
 	}
 
 	return &perTxAccountBalances
