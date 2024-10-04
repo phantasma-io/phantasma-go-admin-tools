@@ -276,7 +276,7 @@ func TrackAccountStateByEventsAndCurrentState(txs []response.TransactionResult,
 		if processingDirection == Forward {
 			perTxAccountBalances[i] = *a
 		} else {
-			perTxAccountBalances[len(txs)-1-i] = *a
+			perTxAccountBalances[len(txs)-i] = *a
 		}
 
 		applyTransactionToAccountState(tx, account, processingDirection)
@@ -284,7 +284,7 @@ func TrackAccountStateByEventsAndCurrentState(txs []response.TransactionResult,
 
 	a := account.Clone()
 	if processingDirection == Forward {
-		perTxAccountBalances[len(txs)-1] = *a
+		perTxAccountBalances[len(txs)] = *a
 	} else {
 		perTxAccountBalances[0] = *a
 	}
