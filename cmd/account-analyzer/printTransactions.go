@@ -17,7 +17,7 @@ var cfgSymbol string
 var cfgEventKinds []event.EventKind
 var cfgShowFailedTxes bool
 
-func getAllAddressTransactions(address string) []response.TransactionResult {
+func getAllAddressTransactions(address string, includeTxes []string) []response.TransactionResult {
 	// Calling "GetAddressTransactionCount" method to get transactions for the address
 	transactionCount, err := client.GetAddressTransactionCount(address, "main")
 	if err != nil {
@@ -39,6 +39,19 @@ func getAllAddressTransactions(address string) []response.TransactionResult {
 			panic("GetAddressTransactions call failed! Error: " + err.Error())
 		}
 		txs = append(txs, txsResponse.Result.Txs...)
+	}
+
+	if includeTxes != nil && len(includeTxes) != 0 {
+		// removing txes which are not in s.Txs list
+		newLength := 0
+		for index := range txs {
+			if slices.Contains(includeTxes, txs[index].Hash) {
+				txs[newLength] = txs[index]
+				newLength++
+			}
+		}
+		// reslice the array to remove extra index
+		txs = txs[:newLength]
 	}
 
 	return txs
@@ -63,12 +76,19 @@ func makeRange(min, max int) []int {
 	return a
 }
 
-func printTransactions(address string, trackAccountState bool, orderDirection analysis.OrderDirection) {
+func printTransactions(address string, trackAccountState, useInitialState bool, orderDirection analysis.OrderDirection) {
 	if address == "" {
 		panic("Address should be set")
 	}
 
-	txes := getAllAddressTransactions(address)
+	var account response.AccountResult
+	if useInitialState {
+		account = getCurrentAddressState(address)
+	} else {
+		account.Address = address
+	}
+
+	txes := getAllAddressTransactions(address, account.Txs)
 	includedTxes := analysis.GetTransactionsByKind(txes, address, cfgSymbol, cfgPayloadFragment, cfgEventKinds, cfgShowFailedTxes)
 
 	var rowsToPrint []string
@@ -76,9 +96,13 @@ func printTransactions(address string, trackAccountState bool, orderDirection an
 	if trackAccountState {
 		slices.Reverse(txes)
 
-		var account response.AccountResult
-		account.Address = address
-		perTxAccountBalances := analysis.TrackAccountStateByEvents(txes, &account, analysis.Forward)
+		var perTxAccountBalances *[]response.AccountResult
+		if useInitialState {
+			perTxAccountBalances = analysis.TrackAccountStateByEventsAndCurrentState(txes, &account, analysis.Backward)
+			*perTxAccountBalances = (*perTxAccountBalances)[1:]
+		} else {
+			perTxAccountBalances = analysis.TrackAccountStateByEvents(txes, &account, analysis.Forward)
+		}
 
 		transactionIndexes := makeRange(1, len(txes))
 
@@ -108,18 +132,7 @@ func printOriginalState(address string) {
 	}
 
 	account := getCurrentAddressState(address)
-	txes := getAllAddressTransactions(address)
-
-	// removing txes which are not in s.Txs list
-	newLength := 0
-	for index := range txes {
-		if slices.Contains(account.Txs, txes[index].Hash) {
-			txes[newLength] = txes[index]
-			newLength++
-		}
-	}
-	// reslice the array to remove extra index
-	txes = txes[:newLength]
+	txes := getAllAddressTransactions(address, account.Txs)
 
 	slices.Reverse(txes)
 
@@ -127,7 +140,7 @@ func printOriginalState(address string) {
 
 	initialState := (*perTxAccountBalances)[0]
 
-	body, err := json.Marshal(initialState)
+	body, err := json.MarshalIndent(initialState, " ", "  ")
 	if err != nil {
 		panic(err)
 	}

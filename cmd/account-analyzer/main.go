@@ -21,6 +21,7 @@ var appOpts struct {
 	ShowFailedTxes    bool     `long:"show-failed" description:"Shows failed transactions"`
 	GetInitialState   bool     `long:"get-initial-state" description:"Get initial state of address by replaying transactions in reverse order"`
 	TrackAccountState bool     `long:"track-account-state" description:"Shows balance state of address for every displayed transaction"`
+	UseInitialState   bool     `long:"use-initial-state" description:"Use initial state of address while replaying transactions with track-account-state argument"`
 }
 
 func main() {
@@ -61,6 +62,6 @@ func main() {
 	if appOpts.GetInitialState {
 		printOriginalState(appOpts.Address)
 	} else {
-		printTransactions(appOpts.Address, appOpts.TrackAccountState, appOpts.ordering)
+		printTransactions(appOpts.Address, appOpts.TrackAccountState, appOpts.UseInitialState, appOpts.ordering)
 	}
 }
