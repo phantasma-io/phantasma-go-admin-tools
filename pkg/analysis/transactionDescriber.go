@@ -86,6 +86,9 @@ func DescribeTransaction(tx response.TransactionResult, perTxAccountBalance *res
 				case event.TokenSend:
 					// We found TokenSend event for given address
 					eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).GetTokenBalance(t).ConvertDecimals()))
+
+				case event.TokenMint:
+					eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).GetTokenBalance(t).ConvertDecimals()))
 				}
 			} else if !t.IsFungible() && describeNonfungible {
 				b := (*perTxAccountBalance).GetTokenBalance(t)
