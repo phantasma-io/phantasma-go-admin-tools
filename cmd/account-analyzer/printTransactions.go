@@ -109,7 +109,7 @@ func printTransactions(address string, trackAccountState, useInitialState bool, 
 		rowsToPrint = analysis.DescribeTransactions(includedTxes,
 			*perTxAccountBalances,
 			transactionIndexes,
-			address, cfgSymbol, cfgPayloadFragment, cfgShowFungible, cfgShowNonfungible, cfgEventKinds)
+			address, cfgSymbol, cfgPayloadFragment, cfgShowFungible, cfgShowNonfungible, cfgEventKinds, cfgShowFailedTxes)
 	} else {
 		for _, t := range includedTxes {
 			rowsToPrint = append(rowsToPrint, t.Hash)

@@ -22,14 +22,16 @@ const (
 
 // Work in progress
 func DescribeTransaction(perTxAccountBalance *AccountState,
-	address, tokenSymbol, payloadFragment string, describeFungible, describeNonfungible bool, eventKinds []event.EventKind) (string, []string) {
+	address, tokenSymbol, payloadFragment string, describeFungible, describeNonfungible bool, eventKinds []event.EventKind) (string, []string, bool) {
 	txInfo := fmt.Sprintf("Hash: %s", perTxAccountBalance.Tx.Hash)
 	eventsInfo := []string{}
 
+	stateIsSuccess := perTxAccountBalance.Tx.StateIsSuccess()
+
 	// Skip failed trasactions
-	if !perTxAccountBalance.Tx.StateIsSuccess() {
+	if !stateIsSuccess {
 		txInfo += " [FAILED]"
-		return txInfo, eventsInfo
+		return txInfo, eventsInfo, stateIsSuccess
 	}
 
 	for _, e := range perTxAccountBalance.Tx.Events {
@@ -109,12 +111,12 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 		}
 	}
 
-	return txInfo, eventsInfo
+	return txInfo, eventsInfo, stateIsSuccess
 }
 
 // Work in progress
 func DescribeTransactions(includedTxes []response.TransactionResult, perTxAccountBalances []AccountState, txIndexes []int,
-	address, tokenSymbol, payloadFragment string, describeFungible, describeNonfungible bool, eventKinds []event.EventKind) []string {
+	address, tokenSymbol, payloadFragment string, describeFungible, describeNonfungible bool, eventKinds []event.EventKind, showFailedTxes bool) []string {
 
 	var result []string
 
@@ -130,9 +132,9 @@ func DescribeTransactions(includedTxes []response.TransactionResult, perTxAccoun
 		}
 
 		if includedTx {
-			txInfo, eventsInfo := DescribeTransaction(&perTxAccountBalance, address, tokenSymbol, payloadFragment, describeFungible, describeNonfungible, eventKinds)
+			txInfo, eventsInfo, stateIsSuccess := DescribeTransaction(&perTxAccountBalance, address, tokenSymbol, payloadFragment, describeFungible, describeNonfungible, eventKinds)
 			var txBlock string
-			if len(eventsInfo) != 0 {
+			if len(eventsInfo) != 0 || (showFailedTxes && !stateIsSuccess) {
 				txBlock += fmt.Sprintf("#%03d %s %s", txIndexes[i], time.Unix(int64(perTxAccountBalance.Tx.Timestamp), 0).UTC().Format(time.RFC822), txInfo)
 				for _, e := range eventsInfo {
 					txBlock += fmt.Sprintf("\n\t %s", e)
