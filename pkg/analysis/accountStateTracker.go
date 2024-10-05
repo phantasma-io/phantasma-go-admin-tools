@@ -244,7 +244,7 @@ func applyTransactionToAccountState(tx response.TransactionResult, a *response.A
 // processingDirection == Backward: We are moving from last tx to first
 // TrackAccountStateByEvents: Modifies account to the latest state using events in transactions, also returns account state array for each transaction
 func TrackAccountStateByEvents(txs []response.TransactionResult,
-	account *response.AccountResult, processingDirection ProcessingDirection) *[]AccountState {
+	account *response.AccountResult, processingDirection ProcessingDirection) []AccountState {
 
 	perTxAccountBalances := make([]AccountState, len(txs), len(txs))
 
@@ -262,11 +262,11 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 		perTxAccountBalances[i].State = *a
 	}
 
-	return &perTxAccountBalances
+	return perTxAccountBalances
 }
 
 func TrackAccountStateByEventsAndCurrentState(txs []response.TransactionResult,
-	account *response.AccountResult, processingDirection ProcessingDirection) *[]AccountState {
+	account *response.AccountResult, processingDirection ProcessingDirection) []AccountState {
 
 	perTxAccountBalances := make([]AccountState, len(txs)+1, len(txs)+1)
 
@@ -298,5 +298,5 @@ func TrackAccountStateByEventsAndCurrentState(txs []response.TransactionResult,
 		perTxAccountBalances[0].State = *a
 	}
 
-	return &perTxAccountBalances
+	return perTxAccountBalances
 }

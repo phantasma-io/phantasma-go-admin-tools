@@ -96,10 +96,10 @@ func printTransactions(address string, trackAccountState, useInitialState bool, 
 	if trackAccountState {
 		slices.Reverse(txes)
 
-		var perTxAccountBalances *[]analysis.AccountState
+		var perTxAccountBalances []analysis.AccountState
 		if useInitialState {
 			perTxAccountBalances = analysis.TrackAccountStateByEventsAndCurrentState(txes, &account, analysis.Backward)
-			*perTxAccountBalances = (*perTxAccountBalances)[1:]
+			perTxAccountBalances = perTxAccountBalances[1:]
 		} else {
 			perTxAccountBalances = analysis.TrackAccountStateByEvents(txes, &account, analysis.Forward)
 		}
@@ -107,7 +107,7 @@ func printTransactions(address string, trackAccountState, useInitialState bool, 
 		transactionIndexes := makeRange(1, len(txes))
 
 		rowsToPrint = analysis.DescribeTransactions(includedTxes,
-			*perTxAccountBalances,
+			perTxAccountBalances,
 			transactionIndexes,
 			address, cfgSymbol, cfgPayloadFragment, cfgShowFungible, cfgShowNonfungible, cfgEventKinds, cfgShowFailedTxes)
 	} else {
@@ -137,7 +137,7 @@ func printOriginalState(address string) {
 
 	perTxAccountBalances := analysis.TrackAccountStateByEventsAndCurrentState(txes, &account, analysis.Backward)
 
-	initialState := (*perTxAccountBalances)[0]
+	initialState := perTxAccountBalances[0]
 
 	body, err := json.MarshalIndent(initialState.State, " ", "  ")
 	if err != nil {
