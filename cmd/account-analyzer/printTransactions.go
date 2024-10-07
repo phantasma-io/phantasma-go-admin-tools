@@ -68,14 +68,6 @@ func getCurrentAddressState(address string) response.AccountResult {
 	return account
 }
 
-func makeRange(min, max int) []int {
-	a := make([]int, max-min+1)
-	for i := range a {
-		a[i] = min + i
-	}
-	return a
-}
-
 func printTransactions(address string, trackAccountState, useInitialState bool, orderDirection analysis.OrderDirection) {
 	if address == "" {
 		panic("Address should be set")
@@ -103,11 +95,8 @@ func printTransactions(address string, trackAccountState, useInitialState bool, 
 			perTxAccountBalances = analysis.TrackAccountStateByEvents(txes, &account, analysis.Forward)
 		}
 
-		transactionIndexes := makeRange(1, len(txes))
-
 		rowsToPrint = analysis.DescribeTransactions(includedTxes,
 			perTxAccountBalances,
-			transactionIndexes,
 			address, cfgSymbol, cfgPayloadFragment, cfgShowFungible, cfgShowNonfungible, cfgEventKinds, cfgShowFailedTxes)
 	} else {
 		for _, t := range includedTxes {

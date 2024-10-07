@@ -115,7 +115,7 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 }
 
 // Work in progress
-func DescribeTransactions(includedTxes []response.TransactionResult, perTxAccountBalances []AccountState, txIndexes []int,
+func DescribeTransactions(includedTxes []response.TransactionResult, perTxAccountBalances []AccountState,
 	address, tokenSymbol, payloadFragment string, describeFungible, describeNonfungible bool, eventKinds []event.EventKind, showFailedTxes bool) []string {
 
 	var result []string
@@ -135,7 +135,7 @@ func DescribeTransactions(includedTxes []response.TransactionResult, perTxAccoun
 			txInfo, eventsInfo, stateIsSuccess := DescribeTransaction(&perTxAccountBalance, address, tokenSymbol, payloadFragment, describeFungible, describeNonfungible, eventKinds)
 			var txBlock string
 			if len(eventsInfo) != 0 || (showFailedTxes && !stateIsSuccess) {
-				txBlock += fmt.Sprintf("#%03d %s %s", txIndexes[i], time.Unix(int64(perTxAccountBalance.Tx.Timestamp), 0).UTC().Format(time.RFC822), txInfo)
+				txBlock += fmt.Sprintf("#%03d %s %s", i+1, time.Unix(int64(perTxAccountBalance.Tx.Timestamp), 0).UTC().Format(time.RFC822), txInfo)
 				for _, e := range eventsInfo {
 					txBlock += fmt.Sprintf("\n\t %s", e)
 				}
