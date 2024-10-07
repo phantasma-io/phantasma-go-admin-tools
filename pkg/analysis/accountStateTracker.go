@@ -246,56 +246,27 @@ func applyTransactionToAccountState(tx response.TransactionResult, a *response.A
 func TrackAccountStateByEvents(txs []response.TransactionResult,
 	account *response.AccountResult, processingDirection ProcessingDirection) []AccountState {
 
-	perTxAccountBalances := make([]AccountState, len(txs), len(txs))
+	length := len(txs)
+	perTxAccountBalances := make([]AccountState, length, length)
 
 	for i := range txs {
-		var tx response.TransactionResult
+		var txIndex int
 		if processingDirection == Forward {
-			tx = txs[i]
+			txIndex = i
 		} else {
-			tx = txs[len(txs)-1-i]
+			txIndex = length - 1 - i
 		}
 
-		applyTransactionToAccountState(tx, account, processingDirection)
-		a := account.Clone()
-		perTxAccountBalances[i].Tx = tx
-		perTxAccountBalances[i].State = *a
-	}
-
-	return perTxAccountBalances
-}
-
-func TrackAccountStateByEventsAndCurrentState(txs []response.TransactionResult,
-	account *response.AccountResult, processingDirection ProcessingDirection) []AccountState {
-
-	perTxAccountBalances := make([]AccountState, len(txs)+1, len(txs)+1)
-
-	for i := range txs {
-		var tx response.TransactionResult
+		perTxAccountBalances[txIndex].Tx = txs[txIndex]
 		if processingDirection == Forward {
-			tx = txs[i]
+			// Modifying state first, saving it later, because processingDirection is Forward
+			applyTransactionToAccountState(txs[txIndex], account, processingDirection)
+			perTxAccountBalances[txIndex].State = *account.Clone()
 		} else {
-			tx = txs[len(txs)-1-i]
+			// Saving state first, modifying it later, because processingDirection is Backward
+			perTxAccountBalances[txIndex].State = *account.Clone()
+			applyTransactionToAccountState(txs[txIndex], account, processingDirection)
 		}
-
-		a := account.Clone()
-		if processingDirection == Forward {
-			perTxAccountBalances[i].Tx = tx
-			perTxAccountBalances[i].State = *a
-		} else {
-			perTxAccountBalances[len(txs)-i].Tx = tx
-			perTxAccountBalances[len(txs)-i].State = *a
-		}
-
-		applyTransactionToAccountState(tx, account, processingDirection)
-	}
-
-	// We are not setting tx here because it's an initial state of account without associated tx
-	a := account.Clone()
-	if processingDirection == Forward {
-		perTxAccountBalances[len(txs)].State = *a
-	} else {
-		perTxAccountBalances[0].State = *a
 	}
 
 	return perTxAccountBalances
