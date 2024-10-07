@@ -81,13 +81,13 @@ func printTransactions(address string, trackAccountState, useInitialState bool, 
 	}
 
 	txes := getAllAddressTransactions(address, account.Txs)
+	slices.Reverse(txes) // Reordering txes, we need them ordered from older to newer
+
 	includedTxes := analysis.GetTransactionsByKind(txes, address, cfgSymbol, cfgPayloadFragment, cfgEventKinds, cfgShowFailedTxes)
 
 	var rowsToPrint []string
 
 	if trackAccountState {
-		slices.Reverse(txes)
-
 		var perTxAccountBalances []analysis.AccountState
 		if useInitialState {
 			perTxAccountBalances = analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward)
