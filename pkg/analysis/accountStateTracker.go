@@ -27,8 +27,23 @@ const (
 )
 
 type AccountState struct {
-	Tx    response.TransactionResult
-	State response.AccountResult
+	Tx             response.TransactionResult
+	State          response.AccountResult
+	IsSm           bool
+	SmStateChanged bool
+}
+
+func CheckIfSmStateChanged(staked1, staked2 *big.Float) bool {
+	return (staked1.Cmp(big.NewFloat(SmThreshold)) >= 0 && staked2.Cmp(big.NewFloat(SmThreshold)) < 0) ||
+		(staked2.Cmp(big.NewFloat(SmThreshold)) >= 0 && staked1.Cmp(big.NewFloat(SmThreshold)) < 0)
+}
+
+func CheckIfSm(a response.AccountResult) bool {
+	return a.Stakes.ConvertDecimalsToFloat().Cmp(big.NewFloat(SmThreshold)) >= 0
+}
+
+func (a AccountState) CheckIfSm() bool {
+	return CheckIfSm(a.State)
 }
 
 func arrayHasEmpoty(a []string) bool {
@@ -87,14 +102,16 @@ func idRemove(ids *[]string, id string, processingDirection ProcessingDirection)
 func applyEventToAccountState(e response.EventResult,
 	previousEvent *response.EventResult,
 	a *response.AccountResult,
-	processingDirection ProcessingDirection, tx string, stakeClaimType StakeClaimType) {
+	processingDirection ProcessingDirection, tx string, stakeClaimType StakeClaimType) bool {
+
+	smStateChanged := false
 
 	eventKind := event.Unknown
 	eventKind.SetString(e.Kind)
 
 	var eventData *event.TokenEventData
 	if !eventKind.IsTokenEvent() {
-		return
+		return smStateChanged
 	}
 
 	// Decode event data into event.TokenEventData structure
@@ -102,7 +119,7 @@ func applyEventToAccountState(e response.EventResult,
 	eventData = io.Deserialize[*event.TokenEventData](decoded, &event.TokenEventData{})
 
 	if e.Address != a.Address {
-		return
+		return smStateChanged
 	}
 
 	t := GetChainToken(eventData.Symbol)
@@ -131,7 +148,13 @@ func applyEventToAccountState(e response.EventResult,
 				if previousEvent == nil || previousEvent.Data != e.Data { // Checking for duplicated stake event (workaround for chain bug)
 					tokenBalance.Amount = amountSub(currentAmount, eventData.Value, processingDirection).String()
 					if stakeClaimType == Normal { // We need to exclude staking related to events like "OrderFilled" or "OrderBid"
+						originalStakedAmount := a.Stakes.ConvertDecimalsToFloat()
+
 						a.Stake = amountAdd(currentSoulStaked, eventData.Value, processingDirection).String()
+						a.Stakes.Amount = a.Stake
+
+						newStakedAmount := a.Stakes.ConvertDecimalsToFloat()
+						smStateChanged = CheckIfSmStateChanged(originalStakedAmount, newStakedAmount)
 					}
 
 				} else {
@@ -146,7 +169,13 @@ func applyEventToAccountState(e response.EventResult,
 			if t.IsStakable() { // We assume it's SOUL token
 				tokenBalance.Amount = amountAdd(currentAmount, eventData.Value, processingDirection).String()
 				if stakeClaimType == Normal { // We need to exclude events related to SM rewards claiming and also claiming related to market events (payment when author's nft is being sold generates claim event)
+					originalStakedAmount := a.Stakes.ConvertDecimalsToFloat()
+
 					a.Stake = amountSub(currentSoulStaked, eventData.Value, processingDirection).String()
+					a.Stakes.Amount = a.Stake
+
+					newStakedAmount := a.Stakes.ConvertDecimalsToFloat()
+					smStateChanged = CheckIfSmStateChanged(originalStakedAmount, newStakedAmount)
 				}
 			} else { // KCAL claim
 				tokenBalance.Amount = amountAdd(currentAmount, eventData.Value, processingDirection).String()
@@ -178,10 +207,13 @@ func applyEventToAccountState(e response.EventResult,
 			idAdd(&tokenBalance.Ids, eventData.Value.String(), processingDirection)
 		}
 	}
+
+	return smStateChanged
 }
 
-func applyEventsToAccountState(es []response.EventResult, a *response.AccountResult, processingDirection ProcessingDirection, tx string) {
+func applyEventsToAccountState(es []response.EventResult, a *response.AccountResult, processingDirection ProcessingDirection, tx string) bool {
 	stakeClaimType := Normal
+	smStateChanged := false
 	for _, e := range es {
 		if e.Address != a.Address {
 			continue
@@ -221,21 +253,27 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 			}
 		}
 
-		applyEventToAccountState(e,
+		if applyEventToAccountState(e,
 			previousEvent,
 			a,
-			processingDirection, tx, stakeClaimType)
+			processingDirection, tx, stakeClaimType) {
+
+			smStateChanged = true
+		}
+
 	}
+
+	return smStateChanged
 }
 
-func applyTransactionToAccountState(tx response.TransactionResult, a *response.AccountResult, processingDirection ProcessingDirection) {
+func applyTransactionToAccountState(tx response.TransactionResult, a *response.AccountResult, processingDirection ProcessingDirection) bool {
 	// Skip failed trasactions
 	if !tx.StateIsSuccess() {
 		// State din't change, saving previous one
-		return
+		return false
 	}
 
-	applyEventsToAccountState(tx.Events, a, processingDirection, tx.Hash)
+	return applyEventsToAccountState(tx.Events, a, processingDirection, tx.Hash)
 }
 
 // TODO Work in progress
@@ -260,12 +298,18 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 		perTxAccountBalances[txIndex].Tx = txs[txIndex]
 		if processingDirection == Forward {
 			// Modifying state first, saving it later, because processingDirection is Forward
-			applyTransactionToAccountState(txs[txIndex], account, processingDirection)
+			perTxAccountBalances[txIndex].SmStateChanged = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
 			perTxAccountBalances[txIndex].State = *account.Clone()
+			// Detecting if account is an SM in this state
+			perTxAccountBalances[txIndex].IsSm = CheckIfSm(*account)
 		} else {
 			// Saving state first, modifying it later, because processingDirection is Backward
 			perTxAccountBalances[txIndex].State = *account.Clone()
-			applyTransactionToAccountState(txs[txIndex], account, processingDirection)
+			// Detecting if account is an SM in this state
+			perTxAccountBalances[txIndex].IsSm = CheckIfSm(*account)
+
+			perTxAccountBalances[txIndex].SmStateChanged = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
+
 		}
 	}
 

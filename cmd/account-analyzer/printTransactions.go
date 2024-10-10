@@ -132,3 +132,25 @@ func printOriginalState(address string) {
 
 	fmt.Print(string(body))
 }
+
+func printSmStates(address string, startingDate int64) {
+	if address == "" {
+		panic("Address should be set")
+	}
+
+	account := getCurrentAddressState(address)
+	txes := getAllAddressTransactions(address, account.Txs)
+
+	slices.Reverse(txes)
+
+	isSmNow := analysis.CheckIfSm(account)
+	states := analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward)
+
+	// We process from now on to the past, so we need to revert states, latest state should be first
+	slices.Reverse(states)
+	perMonthSmStates := analysis.DetectEligibleSm(isSmNow, states, startingDate)
+
+	for pair := perMonthSmStates.Oldest(); pair != nil; pair = pair.Next() {
+		fmt.Printf("%s - %t\n", pair.Key, pair.Value)
+	}
+}

@@ -20,6 +20,7 @@ var appOpts struct {
 	ShowNonfungible   bool     `long:"show-nonfungible" description:"Show nonfungible token events and balances"`
 	ShowFailedTxes    bool     `long:"show-failed" description:"Shows failed transactions"`
 	GetInitialState   bool     `long:"get-initial-state" description:"Get initial state of address by replaying transactions in reverse order"`
+	GetSmStates       bool     `long:"get-sm-states" description:"Get per month SM states of address by replaying transactions in reverse order"`
 	TrackAccountState bool     `long:"track-account-state" description:"Shows balance state of address for every displayed transaction"`
 	UseInitialState   bool     `long:"use-initial-state" description:"Use initial state of address while replaying transactions with track-account-state argument"`
 }
@@ -61,6 +62,10 @@ func main() {
 
 	if appOpts.GetInitialState {
 		printOriginalState(appOpts.Address)
+	} else if appOpts.GetSmStates {
+		// 1669852800 - Thu Dec 01 2022 00:00:00 GMT+0000
+		// 1701388800 - Fri Dec 01 2023 00:00:00 GMT+0000
+		printSmStates(appOpts.Address, 1669852800)
 	} else {
 		printTransactions(appOpts.Address, appOpts.TrackAccountState, appOpts.UseInitialState, appOpts.ordering)
 	}
