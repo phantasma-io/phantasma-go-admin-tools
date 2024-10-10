@@ -76,6 +76,10 @@ func printTransactions(address string, trackAccountState, useInitialState bool, 
 	var account response.AccountResult
 	if useInitialState {
 		account = getCurrentAddressState(address)
+
+		// Reset these fields as they are not tracked by TrackAccountStateByEvents()
+		account.Stakes.Unclaimed = ""
+		account.Unclaimed = ""
 	} else {
 		account.Address = address
 	}
@@ -119,6 +123,11 @@ func printOriginalState(address string) {
 	}
 
 	account := getCurrentAddressState(address)
+
+	// Reset these fields as they are not tracked by TrackAccountStateByEvents()
+	account.Stakes.Unclaimed = ""
+	account.Unclaimed = ""
+
 	txes := getAllAddressTransactions(address, account.Txs)
 
 	slices.Reverse(txes)
