@@ -206,6 +206,17 @@ func applyEventToAccountState(e response.EventResult,
 		case event.TokenMint:
 			tokenBalance.Amount = amountAdd(currentAmount, big.NewInt(1), processingDirection).String()
 			idAdd(&tokenBalance.Ids, eventData.Value.String(), processingDirection)
+
+		// NFTs are staked when they are listed on a marketplace
+		case event.TokenStake:
+			tokenBalance.Amount = amountSub(currentAmount, big.NewInt(1), processingDirection).String()
+			idRemove(&tokenBalance.Ids, eventData.Value.String(), processingDirection)
+
+		// CROWNS are claimed by eligible accounts during inflation transaction
+		// NFTs are claimed when listing gets cancelled on a marketplace
+		case event.TokenClaim:
+			tokenBalance.Amount = amountAdd(currentAmount, big.NewInt(1), processingDirection).String()
+			idAdd(&tokenBalance.Ids, eventData.Value.String(), processingDirection)
 		}
 	}
 

@@ -137,6 +137,24 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 
 				case event.TokenMint:
 					eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s [%s]", eventKind, "1 NFT "+format.ShortenNftId(tokenAmount), eventData.Symbol, payload, b.ConvertDecimals(), format.NftIdsToString(b.Ids, ", ", true)))
+
+				case event.TokenStake:
+					stakeClaimType := " "
+					if (*perTxAccountBalance).StakeClaimType == MarketEvent {
+						stakeClaimType = "M"
+					} else if (*perTxAccountBalance).StakeClaimType == SmReward {
+						stakeClaimType = "S"
+					}
+					eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]", eventKind, stakeClaimType, "1 NFT "+format.ShortenNftId(tokenAmount), eventData.Symbol, payload, b.ConvertDecimals(), format.NftIdsToString(b.Ids, ", ", true)))
+
+				case event.TokenClaim:
+					stakeClaimType := " "
+					if (*perTxAccountBalance).StakeClaimType == MarketEvent {
+						stakeClaimType = "M"
+					} else if (*perTxAccountBalance).StakeClaimType == SmReward {
+						stakeClaimType = "S"
+					}
+					eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]", eventKind, stakeClaimType, "1 NFT "+format.ShortenNftId(tokenAmount), eventData.Symbol, payload, b.ConvertDecimals(), format.NftIdsToString(b.Ids, ", ", true)))
 				}
 			}
 		}
