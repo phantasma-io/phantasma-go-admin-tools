@@ -80,7 +80,14 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 						if (*perTxAccountBalance).IsSm {
 							smLabel = " *SM*"
 						}
-						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s [%s]%s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals(), (*perTxAccountBalance).State.Stakes.ConvertDecimals(), smLabel))
+
+						stakeClaimType := " "
+						if (*perTxAccountBalance).StakeClaimType == MarketEvent {
+							stakeClaimType = "M"
+						} else if (*perTxAccountBalance).StakeClaimType == SmReward {
+							stakeClaimType = "S"
+						}
+						eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]%s", eventKind, stakeClaimType, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals(), (*perTxAccountBalance).State.Stakes.ConvertDecimals(), smLabel))
 					} else {
 						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals()))
 					}
@@ -92,7 +99,14 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 						if (*perTxAccountBalance).IsSm {
 							smLabel = " *SM*"
 						}
-						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s [%s]%s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals(), (*perTxAccountBalance).State.Stakes.ConvertDecimals(), smLabel))
+
+						stakeClaimType := " "
+						if (*perTxAccountBalance).StakeClaimType == MarketEvent {
+							stakeClaimType = "M"
+						} else if (*perTxAccountBalance).StakeClaimType == SmReward {
+							stakeClaimType = "S"
+						}
+						eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]%s", eventKind, stakeClaimType, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals(), (*perTxAccountBalance).State.Stakes.ConvertDecimals(), smLabel))
 					} else {
 						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals()))
 					}

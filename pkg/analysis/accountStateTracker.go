@@ -31,6 +31,7 @@ type AccountState struct {
 	State          response.AccountResult
 	IsSm           bool
 	SmStateChanged bool
+	StakeClaimType StakeClaimType
 }
 
 func CheckIfSmStateChanged(staked1, staked2 *big.Float) bool {
@@ -211,7 +212,7 @@ func applyEventToAccountState(e response.EventResult,
 	return smStateChanged
 }
 
-func applyEventsToAccountState(es []response.EventResult, a *response.AccountResult, processingDirection ProcessingDirection, tx string) bool {
+func applyEventsToAccountState(es []response.EventResult, a *response.AccountResult, processingDirection ProcessingDirection, tx string) (bool, StakeClaimType) {
 	stakeClaimType := Normal
 	smStateChanged := false
 	for _, e := range es {
@@ -266,14 +267,14 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 
 	}
 
-	return smStateChanged
+	return smStateChanged, stakeClaimType
 }
 
-func applyTransactionToAccountState(tx response.TransactionResult, a *response.AccountResult, processingDirection ProcessingDirection) bool {
+func applyTransactionToAccountState(tx response.TransactionResult, a *response.AccountResult, processingDirection ProcessingDirection) (bool, StakeClaimType) {
 	// Skip failed trasactions
 	if !tx.StateIsSuccess() {
 		// State din't change, saving previous one
-		return false
+		return false, Normal
 	}
 
 	return applyEventsToAccountState(tx.Events, a, processingDirection, tx.Hash)
@@ -301,7 +302,7 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 		perTxAccountBalances[txIndex].Tx = txs[txIndex]
 		if processingDirection == Forward {
 			// Modifying state first, saving it later, because processingDirection is Forward
-			perTxAccountBalances[txIndex].SmStateChanged = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
+			perTxAccountBalances[txIndex].SmStateChanged, perTxAccountBalances[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
 			perTxAccountBalances[txIndex].State = *account.Clone()
 			// Detecting if account is an SM in this state
 			perTxAccountBalances[txIndex].IsSm = CheckIfSm(*account)
@@ -311,7 +312,7 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 			// Detecting if account is an SM in this state
 			perTxAccountBalances[txIndex].IsSm = CheckIfSm(*account)
 
-			perTxAccountBalances[txIndex].SmStateChanged = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
+			perTxAccountBalances[txIndex].SmStateChanged, perTxAccountBalances[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
 
 		}
 	}
