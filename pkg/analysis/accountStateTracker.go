@@ -231,10 +231,6 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 			}
 		}
 
-		if e.Address != a.Address {
-			continue
-		}
-
 		if eventKind.IsMarketEvent() {
 			// Decode event data into event.MarketEventData structure
 			decoded, _ := hex.DecodeString(e.Data)
