@@ -74,12 +74,28 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 			if t.IsFungible() && describeFungible {
 				switch eventKind {
 				case event.TokenStake:
-					// We found TokenReceive event for given address
-					eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals()))
+					// We found TokenStake event for given address
+					if t.Symbol == "SOUL" {
+						smLabel := ""
+						if (*perTxAccountBalance).IsSm {
+							smLabel = " *SM*"
+						}
+						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s [%s]%s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals(), (*perTxAccountBalance).State.Stakes.ConvertDecimals(), smLabel))
+					} else {
+						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals()))
+					}
 
 				case event.TokenClaim:
-					// We found TokenReceive event for given address
-					eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals()))
+					// We found TokenClaim event for given address
+					if t.Symbol == "SOUL" {
+						smLabel := ""
+						if (*perTxAccountBalance).IsSm {
+							smLabel = " *SM*"
+						}
+						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s [%s]%s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals(), (*perTxAccountBalance).State.Stakes.ConvertDecimals(), smLabel))
+					} else {
+						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals()))
+					}
 
 				case event.TokenReceive:
 					// We found TokenReceive event for given address
