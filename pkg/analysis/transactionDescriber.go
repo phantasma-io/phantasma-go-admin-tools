@@ -71,6 +71,8 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 			t := GetChainToken(eventData.Symbol)
 			tokenAmount := util.ConvertDecimals(eventData.Value, int(t.Decimals))
 
+			b := (*perTxAccountBalance).State.GetTokenBalance(t)
+
 			if t.IsFungible() && describeFungible {
 				switch eventKind {
 				case event.TokenStake:
@@ -87,9 +89,9 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 						} else if (*perTxAccountBalance).StakeClaimType == SmReward {
 							stakeClaimType = "S"
 						}
-						eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]%s", eventKind, stakeClaimType, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals(), (*perTxAccountBalance).State.Stakes.ConvertDecimals(), smLabel))
+						eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]%s", eventKind, stakeClaimType, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals(), (*perTxAccountBalance).State.Stakes.ConvertDecimals(), smLabel))
 					} else {
-						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals()))
+						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals()))
 					}
 
 				case event.TokenClaim:
@@ -106,24 +108,23 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 						} else if (*perTxAccountBalance).StakeClaimType == SmReward {
 							stakeClaimType = "S"
 						}
-						eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]%s", eventKind, stakeClaimType, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals(), (*perTxAccountBalance).State.Stakes.ConvertDecimals(), smLabel))
+						eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]%s", eventKind, stakeClaimType, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals(), (*perTxAccountBalance).State.Stakes.ConvertDecimals(), smLabel))
 					} else {
-						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals()))
+						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals()))
 					}
 
 				case event.TokenReceive:
 					// We found TokenReceive event for given address
-					eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals()))
+					eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals()))
 
 				case event.TokenSend:
 					// We found TokenSend event for given address
-					eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals()))
+					eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals()))
 
 				case event.TokenMint:
-					eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, (*perTxAccountBalance).State.GetTokenBalance(t).ConvertDecimals()))
+					eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals()))
 				}
 			} else if !t.IsFungible() && describeNonfungible {
-				b := (*perTxAccountBalance).State.GetTokenBalance(t)
 				switch eventKind {
 				case event.TokenReceive:
 					eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s [%s]", eventKind, "1 NFT "+format.ShortenNftId(tokenAmount), eventData.Symbol, payload, b.ConvertDecimals(), format.NftIdsToString(b.Ids, ", ", true)))
