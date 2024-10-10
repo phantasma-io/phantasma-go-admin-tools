@@ -215,23 +215,10 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 	stakeClaimType := Normal
 	smStateChanged := false
 	for _, e := range es {
-		if e.Address != a.Address {
-			continue
-		}
-
 		eventKind := event.Unknown
 		eventKind.SetString(e.Kind)
 
-		if eventKind.IsMarketEvent() {
-			// Decode event data into event.MarketEventData structure
-			decoded, _ := hex.DecodeString(e.Data)
-			eventData := io.Deserialize[*event.MarketEventData](decoded, &event.MarketEventData{})
-
-			if eventData.QuoteSymbol == "SOUL" {
-				stakeClaimType = MarketEvent
-				break
-			}
-		} else if eventKind == event.TokenMint {
+		if eventKind == event.TokenMint {
 			// Decode event data into event.TokenEventData structure
 			decoded, _ := hex.DecodeString(e.Data)
 			eventData := io.Deserialize[*event.TokenEventData](decoded, &event.TokenEventData{})
@@ -242,6 +229,22 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 				break
 			}
 		}
+
+		if e.Address != a.Address {
+			continue
+		}
+
+		if eventKind.IsMarketEvent() {
+			// Decode event data into event.MarketEventData structure
+			decoded, _ := hex.DecodeString(e.Data)
+			eventData := io.Deserialize[*event.MarketEventData](decoded, &event.MarketEventData{})
+
+			if eventData.QuoteSymbol == "SOUL" {
+				stakeClaimType = MarketEvent
+				break
+			}
+		}
+
 	}
 
 	for ei, e := range es {
