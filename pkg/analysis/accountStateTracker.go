@@ -39,12 +39,12 @@ func CheckIfSmStateChanged(staked1, staked2 *big.Float) bool {
 		(staked2.Cmp(big.NewFloat(SmThreshold)) >= 0 && staked1.Cmp(big.NewFloat(SmThreshold)) < 0)
 }
 
-func CheckIfSm(a response.AccountResult) bool {
+func CheckIfSm(a *response.AccountResult) bool {
 	return a.Stakes.ConvertDecimalsToFloat().Cmp(big.NewFloat(SmThreshold)) >= 0
 }
 
-func (a AccountState) CheckIfSm() bool {
-	return CheckIfSm(a.State)
+func (a *AccountState) CheckIfSm() bool {
+	return CheckIfSm(&a.State)
 }
 
 func arrayHasEmpoty(a []string) bool {
@@ -287,6 +287,18 @@ func applyTransactionToAccountState(tx response.TransactionResult, a *response.A
 	return applyEventsToAccountState(tx.Events, a, processingDirection, tx.Hash)
 }
 
+func resetUntrackedFields(account *response.AccountResult) {
+	// We don't need them here, this array is not updated during state tracking atm
+	account.Stakes.Unclaimed = ""
+	account.Stakes.Time = 0
+	account.Unclaimed = ""
+
+	account.Validator = ""
+
+	account.Storage = response.StorageResult{}
+	account.Txs = nil
+}
+
 // TODO Work in progress
 // txs should be ordered from first tx to last
 // processingDirection == Forward: We are moving from first tx to last
@@ -297,6 +309,8 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 
 	length := len(txs)
 	perTxAccountBalances := make([]AccountState, length, length)
+
+	resetUntrackedFields(account)
 
 	for i := range txs {
 		var txIndex int
@@ -312,12 +326,12 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 			perTxAccountBalances[txIndex].SmStateChanged, perTxAccountBalances[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
 			perTxAccountBalances[txIndex].State = *account.Clone()
 			// Detecting if account is an SM in this state
-			perTxAccountBalances[txIndex].IsSm = CheckIfSm(*account)
+			perTxAccountBalances[txIndex].IsSm = CheckIfSm(account)
 		} else {
 			// Saving state first, modifying it later, because processingDirection is Backward
 			perTxAccountBalances[txIndex].State = *account.Clone()
 			// Detecting if account is an SM in this state
-			perTxAccountBalances[txIndex].IsSm = CheckIfSm(*account)
+			perTxAccountBalances[txIndex].IsSm = CheckIfSm(account)
 
 			perTxAccountBalances[txIndex].SmStateChanged, perTxAccountBalances[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
 
