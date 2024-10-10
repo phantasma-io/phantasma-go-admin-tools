@@ -10,7 +10,7 @@ import (
 const SmThreshold = 50000
 
 // Processing direction is from current time to the past
-func checkSmStateChangesDuringMonth(perTxAccountBalances []AccountState, year, month int, startOfNextMonthSmState bool) (bool, bool) {
+func checkSmStateChangesDuringMonth(state []AccountState, year, month int, startOfNextMonthSmState bool) (bool, bool) {
 	start := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, time.UTC)
 	end := start.AddDate(0, 1, 0)
 
@@ -18,7 +18,7 @@ func checkSmStateChangesDuringMonth(perTxAccountBalances []AccountState, year, m
 
 	smStateChanged := false
 	startOfThisMonthSmState := startOfNextMonthSmState
-	for _, s := range perTxAccountBalances {
+	for _, s := range state {
 		if s.Tx.Timestamp > uint(start.UTC().Unix()) && s.Tx.Timestamp < uint(end.UTC().Unix()) {
 
 			if s.SmStateChanged {
@@ -32,7 +32,7 @@ func checkSmStateChangesDuringMonth(perTxAccountBalances []AccountState, year, m
 	return startOfThisMonthSmState, smStateChanged
 }
 
-func DetectEligibleSm(currentSmState bool, perTxAccountBalances []AccountState, startingDate int64) *orderedmap.OrderedMap[string, bool] {
+func DetectEligibleSm(currentSmState bool, states []AccountState, startingDate int64) *orderedmap.OrderedMap[string, bool] {
 	currentTime := time.Now().UTC()
 	t := time.Unix(int64(startingDate), 0).UTC()
 	startingYear := t.Year()
@@ -46,7 +46,7 @@ func DetectEligibleSm(currentSmState bool, perTxAccountBalances []AccountState, 
 	isEligibleSm := false
 	perMonthStates.Set(fmt.Sprintf("%d-%d", y, m), isEligibleSm)
 
-	isSmAtStartOfThisMonth, smStateChanged := checkSmStateChangesDuringMonth(perTxAccountBalances, y, m, currentSmState)
+	isSmAtStartOfThisMonth, smStateChanged := checkSmStateChangesDuringMonth(states, y, m, currentSmState)
 
 	for {
 		m -= 1
@@ -55,7 +55,7 @@ func DetectEligibleSm(currentSmState bool, perTxAccountBalances []AccountState, 
 			y -= 1
 		}
 
-		isSmAtStartOfThisMonth, smStateChanged = checkSmStateChangesDuringMonth(perTxAccountBalances, y, m, isSmAtStartOfThisMonth)
+		isSmAtStartOfThisMonth, smStateChanged = checkSmStateChangesDuringMonth(states, y, m, isSmAtStartOfThisMonth)
 
 		if smStateChanged {
 			// State changed during month - not eligible

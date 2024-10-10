@@ -21,12 +21,12 @@ const (
 )
 
 // Work in progress
-func DescribeTransaction(perTxAccountBalance *AccountState,
+func DescribeTransaction(state *AccountState,
 	address, tokenSymbol, payloadFragment string, describeFungible, describeNonfungible bool, eventKinds []event.EventKind) (string, []string, bool) {
-	txInfo := fmt.Sprintf("Hash: %s", perTxAccountBalance.Tx.Hash)
+	txInfo := fmt.Sprintf("Hash: %s", state.Tx.Hash)
 	eventsInfo := []string{}
 
-	stateIsSuccess := perTxAccountBalance.Tx.StateIsSuccess()
+	stateIsSuccess := state.Tx.StateIsSuccess()
 
 	// Skip failed trasactions
 	if !stateIsSuccess {
@@ -34,7 +34,7 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 		return txInfo, eventsInfo, stateIsSuccess
 	}
 
-	for _, e := range perTxAccountBalance.Tx.Events {
+	for _, e := range state.Tx.Events {
 		if e.Address != address {
 			continue
 		}
@@ -56,7 +56,7 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 				continue
 			}
 
-			payloadBytes, _ := hex.DecodeString(perTxAccountBalance.Tx.Payload)
+			payloadBytes, _ := hex.DecodeString(state.Tx.Payload)
 			payload := string(payloadBytes)
 
 			if payloadFragment != "" && payloadFragment != payload {
@@ -71,7 +71,7 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 			t := GetChainToken(eventData.Symbol)
 			tokenAmount := util.ConvertDecimals(eventData.Value, int(t.Decimals))
 
-			b := perTxAccountBalance.State.GetTokenBalance(t)
+			b := state.State.GetTokenBalance(t)
 
 			if t.IsFungible() && describeFungible {
 				switch eventKind {
@@ -79,17 +79,17 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 					// We found TokenStake event for given address
 					if t.Symbol == "SOUL" {
 						smLabel := ""
-						if perTxAccountBalance.IsSm {
+						if state.IsSm {
 							smLabel = " *SM*"
 						}
 
 						stakeClaimType := " "
-						if perTxAccountBalance.StakeClaimType == MarketEvent {
+						if state.StakeClaimType == MarketEvent {
 							stakeClaimType = "M"
-						} else if perTxAccountBalance.StakeClaimType == SmReward {
+						} else if state.StakeClaimType == SmReward {
 							stakeClaimType = "S"
 						}
-						eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]%s", eventKind, stakeClaimType, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals(), perTxAccountBalance.State.Stakes.ConvertDecimals(), smLabel))
+						eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]%s", eventKind, stakeClaimType, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals(), state.State.Stakes.ConvertDecimals(), smLabel))
 					} else {
 						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals()))
 					}
@@ -98,17 +98,17 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 					// We found TokenClaim event for given address
 					if t.Symbol == "SOUL" {
 						smLabel := ""
-						if perTxAccountBalance.IsSm {
+						if state.IsSm {
 							smLabel = " *SM*"
 						}
 
 						stakeClaimType := " "
-						if perTxAccountBalance.StakeClaimType == MarketEvent {
+						if state.StakeClaimType == MarketEvent {
 							stakeClaimType = "M"
-						} else if perTxAccountBalance.StakeClaimType == SmReward {
+						} else if state.StakeClaimType == SmReward {
 							stakeClaimType = "S"
 						}
-						eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]%s", eventKind, stakeClaimType, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals(), perTxAccountBalance.State.Stakes.ConvertDecimals(), smLabel))
+						eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]%s", eventKind, stakeClaimType, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals(), state.State.Stakes.ConvertDecimals(), smLabel))
 					} else {
 						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals()))
 					}
@@ -140,18 +140,18 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 
 				case event.TokenStake:
 					stakeClaimType := " "
-					if perTxAccountBalance.StakeClaimType == MarketEvent {
+					if state.StakeClaimType == MarketEvent {
 						stakeClaimType = "M"
-					} else if perTxAccountBalance.StakeClaimType == SmReward {
+					} else if state.StakeClaimType == SmReward {
 						stakeClaimType = "S"
 					}
 					eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]", eventKind, stakeClaimType, "1 NFT "+format.ShortenNftId(tokenAmount), eventData.Symbol, payload, b.ConvertDecimals(), format.NftIdsToString(b.Ids, ", ", true)))
 
 				case event.TokenClaim:
 					stakeClaimType := " "
-					if perTxAccountBalance.StakeClaimType == MarketEvent {
+					if state.StakeClaimType == MarketEvent {
 						stakeClaimType = "M"
-					} else if perTxAccountBalance.StakeClaimType == SmReward {
+					} else if state.StakeClaimType == SmReward {
 						stakeClaimType = "S"
 					}
 					eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]", eventKind, stakeClaimType, "1 NFT "+format.ShortenNftId(tokenAmount), eventData.Symbol, payload, b.ConvertDecimals(), format.NftIdsToString(b.Ids, ", ", true)))
@@ -164,27 +164,27 @@ func DescribeTransaction(perTxAccountBalance *AccountState,
 }
 
 // Work in progress
-func DescribeTransactions(includedTxes []response.TransactionResult, perTxAccountBalances []AccountState,
+func DescribeTransactions(includedTxes []response.TransactionResult, states []AccountState,
 	address, tokenSymbol, payloadFragment string, describeFungible, describeNonfungible bool, eventKinds []event.EventKind, showFailedTxes bool) []string {
 
 	var result []string
 
-	for i, perTxAccountBalance := range perTxAccountBalances {
+	for i, s := range states {
 		includedTx := true
 		if len(includedTxes) != 0 {
 			includedTx = false
 			for _, t := range includedTxes {
-				if t.Hash == perTxAccountBalance.Tx.Hash {
+				if t.Hash == s.Tx.Hash {
 					includedTx = true
 				}
 			}
 		}
 
 		if includedTx {
-			txInfo, eventsInfo, stateIsSuccess := DescribeTransaction(&perTxAccountBalance, address, tokenSymbol, payloadFragment, describeFungible, describeNonfungible, eventKinds)
+			txInfo, eventsInfo, stateIsSuccess := DescribeTransaction(&s, address, tokenSymbol, payloadFragment, describeFungible, describeNonfungible, eventKinds)
 			var txBlock string
 			if len(eventsInfo) != 0 || (showFailedTxes && !stateIsSuccess) {
-				txBlock += fmt.Sprintf("#%03d %s %s", i+1, time.Unix(int64(perTxAccountBalance.Tx.Timestamp), 0).UTC().Format(time.RFC822), txInfo)
+				txBlock += fmt.Sprintf("#%03d %s %s", i+1, time.Unix(int64(s.Tx.Timestamp), 0).UTC().Format(time.RFC822), txInfo)
 				for _, e := range eventsInfo {
 					txBlock += fmt.Sprintf("\n\t %s", e)
 				}

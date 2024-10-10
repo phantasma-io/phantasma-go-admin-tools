@@ -88,15 +88,15 @@ func printTransactions(address string, trackAccountState, useInitialState bool, 
 	var rowsToPrint []string
 
 	if trackAccountState {
-		var perTxAccountBalances []analysis.AccountState
+		var states []analysis.AccountState
 		if useInitialState {
-			perTxAccountBalances = analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward)
+			states = analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward)
 		} else {
-			perTxAccountBalances = analysis.TrackAccountStateByEvents(txes, &account, analysis.Forward)
+			states = analysis.TrackAccountStateByEvents(txes, &account, analysis.Forward)
 		}
 
 		rowsToPrint = analysis.DescribeTransactions(includedTxes,
-			perTxAccountBalances,
+			states,
 			address, cfgSymbol, cfgPayloadFragment, cfgShowFungible, cfgShowNonfungible, cfgEventKinds, cfgShowFailedTxes)
 	} else {
 		for _, t := range includedTxes {

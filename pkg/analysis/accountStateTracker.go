@@ -308,7 +308,7 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 	account *response.AccountResult, processingDirection ProcessingDirection) []AccountState {
 
 	length := len(txs)
-	perTxAccountBalances := make([]AccountState, length, length)
+	state := make([]AccountState, length, length)
 
 	resetUntrackedFields(account)
 
@@ -320,23 +320,23 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 			txIndex = length - 1 - i
 		}
 
-		perTxAccountBalances[txIndex].Tx = txs[txIndex]
+		state[txIndex].Tx = txs[txIndex]
 		if processingDirection == Forward {
 			// Modifying state first, saving it later, because processingDirection is Forward
-			perTxAccountBalances[txIndex].SmStateChanged, perTxAccountBalances[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
-			perTxAccountBalances[txIndex].State = *account.Clone()
+			state[txIndex].SmStateChanged, state[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
+			state[txIndex].State = *account.Clone()
 			// Detecting if account is an SM in this state
-			perTxAccountBalances[txIndex].IsSm = CheckIfSm(account)
+			state[txIndex].IsSm = CheckIfSm(account)
 		} else {
 			// Saving state first, modifying it later, because processingDirection is Backward
-			perTxAccountBalances[txIndex].State = *account.Clone()
+			state[txIndex].State = *account.Clone()
 			// Detecting if account is an SM in this state
-			perTxAccountBalances[txIndex].IsSm = CheckIfSm(account)
+			state[txIndex].IsSm = CheckIfSm(account)
 
-			perTxAccountBalances[txIndex].SmStateChanged, perTxAccountBalances[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
+			state[txIndex].SmStateChanged, state[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
 
 		}
 	}
 
-	return perTxAccountBalances
+	return state
 }
