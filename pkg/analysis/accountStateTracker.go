@@ -21,10 +21,28 @@ const (
 type StakeClaimType uint
 
 const (
-	Normal      StakeClaimType = 1
+	Normal StakeClaimType = 1
+
+	// Transaction had market events.
+	// NFT trading: staking NFT into market contract, claiming bought NFT,
+	// claiming NFT after order cancelation, staking fungible tokens during bid,
+	// claiming fungible tokens if bid was overbid.
+	// TODO verify that above description is complete
 	MarketEvent StakeClaimType = 2
-	SmReward    StakeClaimType = 3
+
+	// Transaction was involved in SM rewards distribution.
+	SmReward StakeClaimType = 3
 )
+
+func (t StakeClaimType) String() string {
+	stakeClaimType := " "
+	if t == MarketEvent {
+		stakeClaimType = "M"
+	} else if t == SmReward {
+		stakeClaimType = "S"
+	}
+	return stakeClaimType
+}
 
 type AccountState struct {
 	Tx             response.TransactionResult

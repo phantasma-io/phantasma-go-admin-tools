@@ -83,13 +83,7 @@ func DescribeTransaction(state *AccountState,
 							smLabel = " *SM*"
 						}
 
-						stakeClaimType := " "
-						if state.StakeClaimType == MarketEvent {
-							stakeClaimType = "M"
-						} else if state.StakeClaimType == SmReward {
-							stakeClaimType = "S"
-						}
-						eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]%s", eventKind, stakeClaimType, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals(), state.State.Stakes.ConvertDecimals(), smLabel))
+						eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]%s", eventKind, state.StakeClaimType, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals(), state.State.Stakes.ConvertDecimals(), smLabel))
 					} else {
 						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals()))
 					}
@@ -102,13 +96,7 @@ func DescribeTransaction(state *AccountState,
 							smLabel = " *SM*"
 						}
 
-						stakeClaimType := " "
-						if state.StakeClaimType == MarketEvent {
-							stakeClaimType = "M"
-						} else if state.StakeClaimType == SmReward {
-							stakeClaimType = "S"
-						}
-						eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]%s", eventKind, stakeClaimType, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals(), state.State.Stakes.ConvertDecimals(), smLabel))
+						eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]%s", eventKind, state.StakeClaimType, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals(), state.State.Stakes.ConvertDecimals(), smLabel))
 					} else {
 						eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s", eventKind, tokenAmount, eventData.Symbol, payload, b.ConvertDecimals()))
 					}
@@ -139,22 +127,10 @@ func DescribeTransaction(state *AccountState,
 					eventsInfo = append(eventsInfo, fmt.Sprintf("%-14s %-18s %-6s %-23s %s [%s]", eventKind, "1 NFT "+format.ShortenNftId(tokenAmount), eventData.Symbol, payload, b.ConvertDecimals(), format.NftIdsToString(b.Ids, ", ", true)))
 
 				case event.TokenStake:
-					stakeClaimType := " "
-					if state.StakeClaimType == MarketEvent {
-						stakeClaimType = "M"
-					} else if state.StakeClaimType == SmReward {
-						stakeClaimType = "S"
-					}
-					eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]", eventKind, stakeClaimType, "1 NFT "+format.ShortenNftId(tokenAmount), eventData.Symbol, payload, b.ConvertDecimals(), format.NftIdsToString(b.Ids, ", ", true)))
+					eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]", eventKind, state.StakeClaimType, "1 NFT "+format.ShortenNftId(tokenAmount), eventData.Symbol, payload, b.ConvertDecimals(), format.NftIdsToString(b.Ids, ", ", true)))
 
 				case event.TokenClaim:
-					stakeClaimType := " "
-					if state.StakeClaimType == MarketEvent {
-						stakeClaimType = "M"
-					} else if state.StakeClaimType == SmReward {
-						stakeClaimType = "S"
-					}
-					eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]", eventKind, stakeClaimType, "1 NFT "+format.ShortenNftId(tokenAmount), eventData.Symbol, payload, b.ConvertDecimals(), format.NftIdsToString(b.Ids, ", ", true)))
+					eventsInfo = append(eventsInfo, fmt.Sprintf("%-10s [%s] %-18s %-6s %-23s %s [%s]", eventKind, state.StakeClaimType, "1 NFT "+format.ShortenNftId(tokenAmount), eventData.Symbol, payload, b.ConvertDecimals(), format.NftIdsToString(b.Ids, ", ", true)))
 				}
 			}
 		}
