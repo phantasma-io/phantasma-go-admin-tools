@@ -13,6 +13,7 @@ var appOpts struct {
 	Nexus             string `short:"n" long:"nexus" description:"testnet or mainnet"`
 	Order             string `long:"order" default:"asc" description:"asc or desc"`
 	ordering          analysis.OrderDirection
+	Output            string   `short:"o" long:"output" description:"Output folder"`
 	Address           string   `short:"a" long:"address" description:"Address to analyse"`
 	TokenSymbol       string   `long:"symbol" description:"Token symbol to track balance"`
 	EventKinds        []string `long:"event-kind" description:"Filter out transactions which do not have these events"`
@@ -21,6 +22,7 @@ var appOpts struct {
 	ShowFailedTxes    bool     `long:"show-failed" description:"Shows failed transactions"`
 	GetInitialState   bool     `long:"get-initial-state" description:"Get initial state of address by replaying transactions in reverse order"`
 	GetSmStates       bool     `long:"get-sm-states" description:"Get per month SM states of address by replaying transactions in reverse order"`
+	GetAllBlocks      bool     `long:"get-all-blocks" description:"Get all chain blocks"`
 	GetKnownAddresses bool     `long:"get-known-addresses" description:"Get all known addresses"`
 	TrackAccountState bool     `long:"track-account-state" description:"Shows balance state of address for every displayed transaction"`
 	UseInitialState   bool     `long:"use-initial-state" description:"Use initial state of address while replaying transactions with track-account-state argument"`
@@ -69,6 +71,8 @@ func main() {
 		printSmStates(appOpts.Address, 1669852800)
 	} else if appOpts.GetKnownAddresses {
 		printAllKnownAddresses()
+	} else if appOpts.GetAllBlocks {
+		analysis.GetAllBlocks(appOpts.Output, client)
 	} else {
 		printTransactions(appOpts.Address, appOpts.TrackAccountState, appOpts.UseInitialState, appOpts.ordering)
 	}
