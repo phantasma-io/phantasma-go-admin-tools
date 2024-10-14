@@ -18,7 +18,7 @@ func GetAllKnownAddresses(clients []rpc.PhantasmaRPC, blockCachePath string) []s
 	var err error
 
 	if blockCachePath != "" {
-		chainHeight = findLatestLoadedBlock(blockCachePath)
+		chainHeight = FindLatestCachedBlock(blockCachePath)
 
 		fmt.Printf("Current cache height: %s\n", chainHeight.String())
 	} else {
@@ -54,7 +54,7 @@ func GetAllKnownAddresses(clients []rpc.PhantasmaRPC, blockCachePath string) []s
 		}
 
 		if blockCachePath != "" {
-			blocks = getBlocksInBatchFromCache(h, currentGroupSize, blockCachePath)
+			blocks = GetBlocksInBatchFromCache(h, currentGroupSize, blockCachePath)
 		} else {
 			blocks = getBlocksInBatch(h, currentGroupSize, clients)
 		}
