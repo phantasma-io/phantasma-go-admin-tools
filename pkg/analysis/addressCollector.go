@@ -6,16 +6,28 @@ import (
 	"time"
 
 	"github.com/phantasma-io/phantasma-go/pkg/rpc"
+	"github.com/phantasma-io/phantasma-go/pkg/rpc/response"
 )
 
 const reportEveryNBlocks = 1000
 
-func GetAllKnownAddresses(clients []rpc.PhantasmaRPC) []string {
+func GetAllKnownAddresses(clients []rpc.PhantasmaRPC, blockCachePath string) []string {
 	addresses := []string{}
 
-	chainHeight, err := clients[0].GetBlockHeight("main")
-	if err != nil {
-		panic("GetBlockHeight call failed! Error: " + err.Error())
+	var chainHeight *big.Int
+	var err error
+
+	if blockCachePath != "" {
+		chainHeight = findLatestLoadedBlock(blockCachePath)
+
+		fmt.Printf("Current cache height: %s\n", chainHeight.String())
+	} else {
+		chainHeight, err = clients[0].GetBlockHeight("main")
+		if err != nil {
+			panic("GetBlockHeight call failed! Error: " + err.Error())
+		}
+
+		fmt.Printf("Current chain height: %s\n", chainHeight.String())
 	}
 
 	groupSize := big.NewInt(10)
@@ -31,7 +43,21 @@ func GetAllKnownAddresses(clients []rpc.PhantasmaRPC) []string {
 			start = time.Now()
 		}
 
-		blocks := getBlocksInBatch(h, groupSize, clients)
+		var blocks []response.BlockResult
+
+		// Last group might be smaller, we need to calculate correct size of last group
+		var currentGroupSize *big.Int
+		currentGroupSize = groupSize
+		delta := new(big.Int).Sub(chainHeight, h)
+		if currentGroupSize.Cmp(delta) == 1 {
+			currentGroupSize = delta
+		}
+
+		if blockCachePath != "" {
+			blocks = getBlocksInBatchFromCache(h, currentGroupSize, blockCachePath)
+		} else {
+			blocks = getBlocksInBatch(h, currentGroupSize, clients)
+		}
 
 		for _, b := range blocks {
 			txs := b.Txs

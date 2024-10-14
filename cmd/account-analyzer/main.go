@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/jessevdk/go-flags"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/analysis"
 	"github.com/phantasma-io/phantasma-go/pkg/domain/event"
@@ -15,6 +17,7 @@ var appOpts struct {
 	Order             string `long:"order" default:"asc" description:"asc or desc"`
 	ordering          analysis.OrderDirection
 	Output            string   `short:"o" long:"output" description:"Output folder"`
+	BlockCache        string   `long:"block-cache" description:"Path to folder containing blocks cache"`
 	Address           string   `short:"a" long:"address" description:"Address to analyse"`
 	TokenSymbol       string   `long:"symbol" description:"Token symbol to track balance"`
 	EventKinds        []string `long:"event-kind" description:"Filter out transactions which do not have these events"`
@@ -73,7 +76,11 @@ func main() {
 		// 1701388800 - Fri Dec 01 2023 00:00:00 GMT+0000
 		printSmStates(appOpts.Address, 1669852800)
 	} else if appOpts.GetKnownAddresses {
-		printAllKnownAddresses()
+		addresses := analysis.GetAllKnownAddresses(clients, appOpts.BlockCache)
+
+		for _, r := range addresses {
+			fmt.Printf("%s,", r)
+		}
 	} else if appOpts.GetAllBlocks {
 		analysis.GetAllBlocks(appOpts.Output, clients)
 	} else {
