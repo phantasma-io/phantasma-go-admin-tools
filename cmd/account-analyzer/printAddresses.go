@@ -7,7 +7,7 @@ import (
 )
 
 func printAllKnownAddresses() {
-	addresses := analysis.GetAllKnownAddresses(client)
+	addresses := analysis.GetAllKnownAddresses(clients)
 
 	for _, r := range addresses {
 		fmt.Printf("%s,", r)

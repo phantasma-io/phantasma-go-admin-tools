@@ -10,10 +10,10 @@ import (
 
 const reportEveryNBlocks = 1000
 
-func GetAllKnownAddresses(client rpc.PhantasmaRPC) []string {
+func GetAllKnownAddresses(clients []rpc.PhantasmaRPC) []string {
 	addresses := []string{}
 
-	chainHeight, err := client.GetBlockHeight("main")
+	chainHeight, err := clients[0].GetBlockHeight("main")
 	if err != nil {
 		panic("GetBlockHeight call failed! Error: " + err.Error())
 	}
@@ -31,7 +31,7 @@ func GetAllKnownAddresses(client rpc.PhantasmaRPC) []string {
 			start = time.Now()
 		}
 
-		blocks := getBlocksInBatch(h, groupSize, client)
+		blocks := getBlocksInBatch(h, groupSize, clients)
 
 		for _, b := range blocks {
 			txs := b.Txs

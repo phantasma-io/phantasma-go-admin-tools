@@ -7,6 +7,7 @@ import (
 	"github.com/phantasma-io/phantasma-go/pkg/rpc"
 )
 
+var clients []rpc.PhantasmaRPC
 var client rpc.PhantasmaRPC
 
 var appOpts struct {
@@ -44,8 +45,10 @@ func main() {
 
 	if appOpts.Nexus == "testnet" {
 		client = rpc.NewRPCTestnet()
+		clients = []rpc.PhantasmaRPC{client}
 	} else {
-		client = rpc.NewRPCMainnet()
+		clients = rpc.NewRPCSetMainnet()
+		client = clients[0]
 	}
 	analysis.InitChainTokens(client)
 
@@ -72,7 +75,7 @@ func main() {
 	} else if appOpts.GetKnownAddresses {
 		printAllKnownAddresses()
 	} else if appOpts.GetAllBlocks {
-		analysis.GetAllBlocks(appOpts.Output, client)
+		analysis.GetAllBlocks(appOpts.Output, clients)
 	} else {
 		printTransactions(appOpts.Address, appOpts.TrackAccountState, appOpts.UseInitialState, appOpts.ordering)
 	}

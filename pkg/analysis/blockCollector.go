@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -18,7 +19,7 @@ import (
 
 var one = big.NewInt(1)
 
-func getBlocksInBatch(startHeight, groupSize *big.Int, client rpc.PhantasmaRPC) []response.BlockResult {
+func getBlocksInBatch(startHeight, groupSize *big.Int, clients []rpc.PhantasmaRPC) []response.BlockResult {
 	var wg sync.WaitGroup
 	res := make([]response.BlockResult, groupSize.Int64())
 
@@ -32,6 +33,8 @@ func getBlocksInBatch(startHeight, groupSize *big.Int, client rpc.PhantasmaRPC) 
 		capturedH.Set(h)
 		go func(heightToFetch string, index int) {
 			defer wg.Done()
+
+			client := clients[rand.Intn(len(clients))]
 
 			r, err := util.RetryHelper(func() (any, error) {
 				return client.GetBlockByHeight("main", heightToFetch)
@@ -80,7 +83,7 @@ func storeBlock(path string, block response.BlockResult) {
 	os.WriteFile(blockPath, jsonString, 0644)
 }
 
-func GetAllBlocks(outputFolder string, client rpc.PhantasmaRPC) []string {
+func GetAllBlocks(outputFolder string, clients []rpc.PhantasmaRPC) []string {
 
 	latestLoaded := findLatestLoadedBlock(outputFolder)
 	continueFrom := new(big.Int).Add(latestLoaded, one)
@@ -88,12 +91,12 @@ func GetAllBlocks(outputFolder string, client rpc.PhantasmaRPC) []string {
 
 	addresses := []string{}
 
-	chainHeight, err := client.GetBlockHeight("main")
+	chainHeight, err := clients[0].GetBlockHeight("main")
 	if err != nil {
 		panic("GetBlockHeight call failed! Error: " + err.Error())
 	}
 
-	groupSize := big.NewInt(10)
+	groupSize := big.NewInt(30)
 	blocksNotReported := 0
 
 	start := time.Now()
@@ -106,7 +109,7 @@ func GetAllBlocks(outputFolder string, client rpc.PhantasmaRPC) []string {
 			start = time.Now()
 		}
 
-		blocks := getBlocksInBatch(h, groupSize, client)
+		blocks := getBlocksInBatch(h, groupSize, clients)
 
 		for _, b := range blocks {
 			storeBlock(outputFolder, b)
