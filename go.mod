@@ -7,7 +7,7 @@ require github.com/linxGnu/grocksdb v1.9.2
 require (
 	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
 	github.com/jessevdk/go-flags v1.6.1
-	github.com/phantasma-io/phantasma-go v0.0.0-20241013201109-1da6b6434eba
+	github.com/phantasma-io/phantasma-go v0.0.0-20241013204210-fe53b7db8f33
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 )
 
