@@ -3,8 +3,6 @@ package analysis
 import (
 	"fmt"
 	"time"
-
-	orderedmap "github.com/wk8/go-ordered-map/v2"
 )
 
 const SmThreshold = 50000
@@ -32,19 +30,18 @@ func checkSmStateChangesDuringMonth(state []AccountState, year, month int, start
 	return startOfThisMonthSmState, smStateChanged
 }
 
-func DetectEligibleSm(currentSmState bool, states []AccountState, startingDate int64) *orderedmap.OrderedMap[string, bool] {
+func DetectEligibleSm(currentSmState bool, states []AccountState, startingDate int64) []string {
 	currentTime := time.Now().UTC()
 	t := time.Unix(int64(startingDate), 0).UTC()
 	startingYear := t.Year()
 	startingMonth := int(t.Month())
 
-	perMonthStates := orderedmap.New[string, bool]()
+	eligibleMonths := []string{}
 
 	y := currentTime.Year()
 	m := int(currentTime.Month())
 
 	isEligibleSm := false
-	perMonthStates.Set(fmt.Sprintf("%d-%d", y, m), isEligibleSm)
 
 	isSmAtStartOfThisMonth, smStateChanged := checkSmStateChangesDuringMonth(states, y, m, currentSmState)
 
@@ -65,7 +62,9 @@ func DetectEligibleSm(currentSmState bool, states []AccountState, startingDate i
 			isEligibleSm = true
 		}
 
-		perMonthStates.Set(fmt.Sprintf("%d-%d", y, m), isEligibleSm)
+		if isEligibleSm {
+			eligibleMonths = append(eligibleMonths, fmt.Sprintf("%d-%d", y, m))
+		}
 		// fmt.Printf("%d-%d: Setting this: isSmAtStartOfThisMonth: %t isEligibleSm: %t\n\n", y, m, isSmAtStartOfThisMonth, isEligibleSm)
 
 		if y == startingYear && m == startingMonth {
@@ -73,5 +72,5 @@ func DetectEligibleSm(currentSmState bool, states []AccountState, startingDate i
 		}
 	}
 
-	return perMonthStates
+	return eligibleMonths
 }

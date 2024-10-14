@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"os"
 	"slices"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/analysis"
@@ -149,9 +151,12 @@ func printSmStates(address string, startingDate int64) {
 
 	// We process from now on to the past, so we need to revert states, latest state should be first
 	slices.Reverse(states)
-	perMonthSmStates := analysis.DetectEligibleSm(isSmNow, states, startingDate)
+	eligibleMonths := analysis.DetectEligibleSm(isSmNow, states, startingDate)
 
-	for pair := perMonthSmStates.Oldest(); pair != nil; pair = pair.Next() {
-		fmt.Printf("%s - %t\n", pair.Key, pair.Value)
+	wr := csv.NewWriter(os.Stdout)
+
+	if len(eligibleMonths) > 0 {
+		wr.Write(append([]string{address}, eligibleMonths...))
+		wr.Flush()
 	}
 }

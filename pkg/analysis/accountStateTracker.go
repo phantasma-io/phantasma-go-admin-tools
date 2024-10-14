@@ -352,7 +352,6 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 			state[txIndex].IsSm = CheckIfSm(account)
 
 			state[txIndex].SmStateChanged, state[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
-
 		}
 	}
 
