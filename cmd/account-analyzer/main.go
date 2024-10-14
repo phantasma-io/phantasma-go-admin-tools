@@ -82,6 +82,10 @@ func main() {
 			fmt.Printf("%s,", r)
 		}
 	} else if appOpts.GetAllBlocks {
+		if appOpts.Output == "" {
+			panic("--output argument is mandatory when --get-all-blocks passed")
+		}
+
 		analysis.GetAllBlocks(appOpts.Output, clients)
 	} else {
 		printTransactions(appOpts.Address, appOpts.TrackAccountState, appOpts.UseInitialState, appOpts.ordering)

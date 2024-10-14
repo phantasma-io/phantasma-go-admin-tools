@@ -54,7 +54,7 @@ func GetAllBlocks(outputFolder string, clients []rpc.PhantasmaRPC) []string {
 
 	latestLoaded := FindLatestCachedBlock(outputFolder)
 	continueFrom := new(big.Int).Add(latestLoaded, one)
-	fmt.Printf("Continue from block %s", continueFrom.String())
+	fmt.Printf("Continue from block %s\n", continueFrom.String())
 
 	addresses := []string{}
 
@@ -67,16 +67,25 @@ func GetAllBlocks(outputFolder string, clients []rpc.PhantasmaRPC) []string {
 	blocksNotReported := 0
 
 	start := time.Now()
+	startIteration := time.Now()
 
 	for h := continueFrom; h.Cmp(chainHeight) <= 0; h.Add(h, groupSize) {
 		if blocksNotReported >= reportEveryNBlocks {
-			elapsed := time.Since(start)
+			elapsed := time.Since(startIteration)
 			fmt.Printf("Processed %s blocks in %f seconds, %f blocks per second\n", h, elapsed.Seconds(), float64(blocksNotReported)/elapsed.Seconds())
 			blocksNotReported = 0
-			start = time.Now()
+			startIteration = time.Now()
 		}
 
-		blocks := getBlocksInBatch(h, groupSize, clients)
+		// Last group might be smaller, we need to calculate correct size of last group
+		var currentGroupSize *big.Int
+		currentGroupSize = groupSize
+		delta := new(big.Int).Sub(chainHeight, h)
+		if currentGroupSize.Cmp(delta) == 1 {
+			currentGroupSize = delta
+		}
+
+		blocks := getBlocksInBatch(h, currentGroupSize, clients)
 
 		for _, b := range blocks {
 			storeBlock(outputFolder, b)
@@ -85,8 +94,7 @@ func GetAllBlocks(outputFolder string, clients []rpc.PhantasmaRPC) []string {
 		blocksNotReported += len(blocks)
 	}
 
-	elapsed := time.Since(start)
-	fmt.Printf("Stored %s blocks in %f seconds\n", chainHeight, elapsed.Seconds())
+	fmt.Printf("Stored %s blocks in %f seconds\n", new(big.Int).Sub(chainHeight, latestLoaded), time.Since(start).Seconds())
 
 	return addresses
 }
