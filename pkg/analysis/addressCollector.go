@@ -3,15 +3,14 @@ package analysis
 import (
 	"fmt"
 	"math/big"
+	"slices"
 	"time"
 
 	"github.com/phantasma-io/phantasma-go/pkg/rpc"
 	"github.com/phantasma-io/phantasma-go/pkg/rpc/response"
 )
 
-const reportEveryNBlocks = 1000
-
-func GetAllKnownAddresses(clients []rpc.PhantasmaRPC, blockCachePath string) []string {
+func GetAllKnownAddresses(clients []rpc.PhantasmaRPC, blockCachePath string, verbose bool) []string {
 	addresses := []string{}
 
 	var chainHeight *big.Int
@@ -20,27 +19,35 @@ func GetAllKnownAddresses(clients []rpc.PhantasmaRPC, blockCachePath string) []s
 	if blockCachePath != "" {
 		chainHeight = FindLatestCachedBlock(blockCachePath)
 
-		fmt.Printf("Current cache height: %s\n", chainHeight.String())
+		if verbose {
+			fmt.Printf("Current cache height: %s\n", chainHeight.String())
+		}
 	} else {
 		chainHeight, err = clients[0].GetBlockHeight("main")
 		if err != nil {
 			panic("GetBlockHeight call failed! Error: " + err.Error())
 		}
 
-		fmt.Printf("Current chain height: %s\n", chainHeight.String())
+		if verbose {
+			fmt.Printf("Current chain height: %s\n", chainHeight.String())
+		}
 	}
 
 	groupSize := big.NewInt(10)
 	blocksNotReported := 0
 
 	start := time.Now()
+	startIteration := time.Now()
 
 	for h := big.NewInt(1); h.Cmp(chainHeight) <= 0; h.Add(h, groupSize) {
-		if blocksNotReported >= reportEveryNBlocks {
-			elapsed := time.Since(start)
-			fmt.Printf("Processed %s blocks in %f seconds, %f blocks per second\n", h, elapsed.Seconds(), float64(blocksNotReported)/elapsed.Seconds())
-			blocksNotReported = 0
-			start = time.Now()
+		if verbose {
+			const reportEveryNBlocks = 100000
+			if blocksNotReported >= reportEveryNBlocks {
+				elapsed := time.Since(startIteration)
+				fmt.Printf("Processed %d blocks [%s] in %f seconds, %f blocks per second\n", blocksNotReported, h, elapsed.Seconds(), float64(blocksNotReported)/elapsed.Seconds())
+				blocksNotReported = 0
+				startIteration = time.Now()
+			}
 		}
 
 		var blocks []response.BlockResult
@@ -63,7 +70,9 @@ func GetAllKnownAddresses(clients []rpc.PhantasmaRPC, blockCachePath string) []s
 			txs := b.Txs
 			for _, tx := range txs {
 				for _, e := range tx.Events {
-					addresses = append(addresses, e.Address)
+					if !slices.Contains(addresses, e.Address) {
+						addresses = append(addresses, e.Address)
+					}
 				}
 			}
 		}
@@ -71,8 +80,9 @@ func GetAllKnownAddresses(clients []rpc.PhantasmaRPC, blockCachePath string) []s
 		blocksNotReported += len(blocks)
 	}
 
-	elapsed := time.Since(start)
-	fmt.Printf("Processed %s blocks in %f seconds\n", chainHeight, elapsed.Seconds())
+	if verbose {
+		fmt.Printf("Processed %s blocks in %f minutes, collected %d addresses\n", chainHeight, time.Since(start).Minutes(), len(addresses))
+	}
 
 	return addresses
 }

@@ -30,6 +30,7 @@ var appOpts struct {
 	GetKnownAddresses bool     `long:"get-known-addresses" description:"Get all known addresses"`
 	TrackAccountState bool     `long:"track-account-state" description:"Shows balance state of address for every displayed transaction"`
 	UseInitialState   bool     `long:"use-initial-state" description:"Use initial state of address while replaying transactions with track-account-state argument"`
+	Verbose           bool     `short:"v" long:"verbose" description:"Verbose mode"`
 }
 
 func main() {
@@ -76,7 +77,7 @@ func main() {
 		// 1701388800 - Fri Dec 01 2023 00:00:00 GMT+0000
 		printSmStates(appOpts.Address, 1669852800)
 	} else if appOpts.GetKnownAddresses {
-		addresses := analysis.GetAllKnownAddresses(clients, appOpts.BlockCache)
+		addresses := analysis.GetAllKnownAddresses(clients, appOpts.BlockCache, appOpts.Verbose)
 
 		for _, r := range addresses {
 			fmt.Printf("%s,", r)

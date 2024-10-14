@@ -70,6 +70,7 @@ func GetAllBlocks(outputFolder string, clients []rpc.PhantasmaRPC) []string {
 	startIteration := time.Now()
 
 	for h := continueFrom; h.Cmp(chainHeight) <= 0; h.Add(h, groupSize) {
+		const reportEveryNBlocks = 1000
 		if blocksNotReported >= reportEveryNBlocks {
 			elapsed := time.Since(startIteration)
 			fmt.Printf("Processed %s blocks in %f seconds, %f blocks per second\n", h, elapsed.Seconds(), float64(blocksNotReported)/elapsed.Seconds())
