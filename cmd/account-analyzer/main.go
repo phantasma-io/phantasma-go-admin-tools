@@ -1,7 +1,10 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/analysis"
@@ -19,6 +22,7 @@ var appOpts struct {
 	Output            string   `short:"o" long:"output" description:"Output folder"`
 	BlockCache        string   `long:"block-cache" description:"Path to folder containing blocks cache"`
 	Address           string   `short:"a" long:"address" description:"Address to analyse"`
+	AddressCsvPath    string   `long:"address-csv-path" description:"Path to CSV file with addresses"`
 	TokenSymbol       string   `long:"symbol" description:"Token symbol to track balance"`
 	EventKinds        []string `long:"event-kind" description:"Filter out transactions which do not have these events"`
 	ShowFungible      bool     `long:"show-fungible" description:"Show fungible token events and balances"`
@@ -71,11 +75,59 @@ func main() {
 	cfgShowFailedTxes = appOpts.ShowFailedTxes
 
 	if appOpts.GetInitialState {
-		printOriginalState(appOpts.Address)
+		printOriginalState(appOpts.Address, appOpts.Verbose)
 	} else if appOpts.GetSmStates {
+		addresses := []string{}
+
+		if appOpts.AddressCsvPath != "" {
+			f, err := os.Open(appOpts.AddressCsvPath)
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
+
+			csvReader := csv.NewReader(f)
+			data, err := csvReader.ReadAll()
+			if err != nil {
+				panic(err)
+			}
+
+			addresses = data[0]
+		} else {
+			addresses = []string{appOpts.Address}
+		}
+
 		// 1669852800 - Thu Dec 01 2022 00:00:00 GMT+0000
 		// 1701388800 - Fri Dec 01 2023 00:00:00 GMT+0000
-		printSmStates(appOpts.Address, 1669852800)
+		startDate := int64(1701388800)
+
+		if appOpts.Verbose {
+			fmt.Printf("Processing %d addresses for SM rewards eligibility starting %s", len(addresses), time.Unix(startDate, 0).UTC().Format(time.RFC822))
+		}
+
+		notReported := 0
+		start := time.Now()
+		startIteration := time.Now()
+
+		for _, a := range addresses {
+			if appOpts.Verbose {
+				const reportEveryNIterations = 100
+				if notReported >= reportEveryNIterations {
+					elapsed := time.Since(startIteration)
+					fmt.Printf("Processed %d addresses [%d] in %f seconds, %f addresses per second\n", notReported, len(addresses), elapsed.Seconds(), float64(notReported)/elapsed.Seconds())
+					notReported = 0
+					startIteration = time.Now()
+				}
+			}
+
+			printSmStates(a, startDate, appOpts.Verbose)
+
+			notReported += 1
+		}
+
+		if appOpts.Verbose {
+			fmt.Printf("Processed %d addresses in %f minutes\n", len(addresses), time.Since(start).Minutes())
+		}
 	} else if appOpts.GetKnownAddresses {
 		addresses := analysis.GetAllKnownAddresses(clients, appOpts.BlockCache, appOpts.Verbose)
 
@@ -89,6 +141,6 @@ func main() {
 
 		analysis.GetAllBlocks(appOpts.Output, clients)
 	} else {
-		printTransactions(appOpts.Address, appOpts.TrackAccountState, appOpts.UseInitialState, appOpts.ordering)
+		printTransactions(appOpts.Address, appOpts.TrackAccountState, appOpts.UseInitialState, appOpts.ordering, appOpts.Verbose)
 	}
 }

@@ -121,7 +121,7 @@ func idRemove(ids *[]string, id string, processingDirection ProcessingDirection)
 func applyEventToAccountState(e response.EventResult,
 	previousEvent *response.EventResult,
 	a *response.AccountResult,
-	processingDirection ProcessingDirection, tx string, stakeClaimType StakeClaimType) bool {
+	processingDirection ProcessingDirection, tx string, stakeClaimType StakeClaimType, verbose bool) bool {
 
 	smStateChanged := false
 
@@ -176,7 +176,7 @@ func applyEventToAccountState(e response.EventResult,
 						smStateChanged = CheckIfSmStateChanged(originalStakedAmount, newStakedAmount)
 					}
 
-				} else {
+				} else if verbose {
 					fmt.Println("Check tx: " + tx)
 				}
 			} else {
@@ -241,7 +241,7 @@ func applyEventToAccountState(e response.EventResult,
 	return smStateChanged
 }
 
-func applyEventsToAccountState(es []response.EventResult, a *response.AccountResult, processingDirection ProcessingDirection, tx string) (bool, StakeClaimType) {
+func applyEventsToAccountState(es []response.EventResult, a *response.AccountResult, processingDirection ProcessingDirection, tx string, verbose bool) (bool, StakeClaimType) {
 	stakeClaimType := Normal
 	smStateChanged := false
 	for _, e := range es {
@@ -285,7 +285,7 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 		if applyEventToAccountState(e,
 			previousEvent,
 			a,
-			processingDirection, tx, stakeClaimType) {
+			processingDirection, tx, stakeClaimType, verbose) {
 
 			smStateChanged = true
 		}
@@ -295,14 +295,14 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 	return smStateChanged, stakeClaimType
 }
 
-func applyTransactionToAccountState(tx response.TransactionResult, a *response.AccountResult, processingDirection ProcessingDirection) (bool, StakeClaimType) {
+func applyTransactionToAccountState(tx response.TransactionResult, a *response.AccountResult, processingDirection ProcessingDirection, verbose bool) (bool, StakeClaimType) {
 	// Skip failed trasactions
 	if !tx.StateIsSuccess() {
 		// State din't change, saving previous one
 		return false, Normal
 	}
 
-	return applyEventsToAccountState(tx.Events, a, processingDirection, tx.Hash)
+	return applyEventsToAccountState(tx.Events, a, processingDirection, tx.Hash, verbose)
 }
 
 func resetUntrackedFields(account *response.AccountResult) {
@@ -323,7 +323,7 @@ func resetUntrackedFields(account *response.AccountResult) {
 // processingDirection == Backward: We are moving from last tx to first
 // TrackAccountStateByEvents: Modifies account to the latest state using events in transactions, also returns account state array for each transaction
 func TrackAccountStateByEvents(txs []response.TransactionResult,
-	account *response.AccountResult, processingDirection ProcessingDirection) []AccountState {
+	account *response.AccountResult, processingDirection ProcessingDirection, verbose bool) []AccountState {
 
 	length := len(txs)
 	state := make([]AccountState, length, length)
@@ -341,7 +341,7 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 		state[txIndex].Tx = txs[txIndex]
 		if processingDirection == Forward {
 			// Modifying state first, saving it later, because processingDirection is Forward
-			state[txIndex].SmStateChanged, state[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
+			state[txIndex].SmStateChanged, state[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection, verbose)
 			state[txIndex].State = *account.Clone()
 			// Detecting if account is an SM in this state
 			state[txIndex].IsSm = CheckIfSm(account)
@@ -351,7 +351,7 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 			// Detecting if account is an SM in this state
 			state[txIndex].IsSm = CheckIfSm(account)
 
-			state[txIndex].SmStateChanged, state[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection)
+			state[txIndex].SmStateChanged, state[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection, verbose)
 		}
 	}
 

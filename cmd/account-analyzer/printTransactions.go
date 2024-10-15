@@ -23,7 +23,7 @@ func getAllAddressTransactions(address string, includeTxes []string) []response.
 	// Calling "GetAddressTransactionCount" method to get transactions for the address
 	transactionCount, err := client.GetAddressTransactionCount(address, "main")
 	if err != nil {
-		panic("GetAddressTransactionCount call failed! Error: " + err.Error())
+		panic("GetAddressTransactionCount call failed for address '" + address + "'! Error: " + err.Error())
 	}
 
 	txs := []response.TransactionResult{}
@@ -38,7 +38,7 @@ func getAllAddressTransactions(address string, includeTxes []string) []response.
 		// Calling "GetAddressTransactions" method to get transactions for the address
 		txsResponse, err := client.GetAddressTransactions(address, p, pageSize)
 		if err != nil {
-			panic("GetAddressTransactions call failed! Error: " + err.Error())
+			panic("GetAddressTransactions call failed for address '" + address + "'! Error: " + err.Error())
 		}
 		txs = append(txs, txsResponse.Result.Txs...)
 	}
@@ -70,7 +70,7 @@ func getCurrentAddressState(address string) response.AccountResult {
 	return account
 }
 
-func printTransactions(address string, trackAccountState, useInitialState bool, orderDirection analysis.OrderDirection) {
+func printTransactions(address string, trackAccountState, useInitialState bool, orderDirection analysis.OrderDirection, verbose bool) {
 	if address == "" {
 		panic("Address should be set")
 	}
@@ -92,9 +92,9 @@ func printTransactions(address string, trackAccountState, useInitialState bool, 
 	if trackAccountState {
 		var states []analysis.AccountState
 		if useInitialState {
-			states = analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward)
+			states = analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward, verbose)
 		} else {
-			states = analysis.TrackAccountStateByEvents(txes, &account, analysis.Forward)
+			states = analysis.TrackAccountStateByEvents(txes, &account, analysis.Forward, verbose)
 		}
 
 		rowsToPrint = analysis.DescribeTransactions(includedTxes,
@@ -115,7 +115,7 @@ func printTransactions(address string, trackAccountState, useInitialState bool, 
 	}
 }
 
-func printOriginalState(address string) {
+func printOriginalState(address string, verbose bool) {
 	if address == "" {
 		panic("Address should be set")
 	}
@@ -126,7 +126,7 @@ func printOriginalState(address string) {
 
 	slices.Reverse(txes)
 
-	analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward)
+	analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward, verbose)
 
 	body, err := json.MarshalIndent(account, " ", "  ")
 	if err != nil {
@@ -136,7 +136,7 @@ func printOriginalState(address string) {
 	fmt.Print(string(body))
 }
 
-func printSmStates(address string, startingDate int64) {
+func printSmStates(address string, startingDate int64, verbose bool) {
 	if address == "" {
 		panic("Address should be set")
 	}
@@ -147,7 +147,7 @@ func printSmStates(address string, startingDate int64) {
 	slices.Reverse(txes)
 
 	isSmNow := analysis.CheckIfSm(&account)
-	states := analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward)
+	states := analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward, verbose)
 
 	// We process from now on to the past, so we need to revert states, latest state should be first
 	slices.Reverse(states)
