@@ -16,6 +16,14 @@ build-rocksdb-storage-reader:
     CGO_LDFLAGS="-L/usr/local/lib -lrocksdb -lstdc++ -lm -lz -lsnappy -llz4 -lzstd -lbz2" \
     go build -o bin ./cmd/rocksdb-storage-reader
 
+build-rocksdb-fedora:
+    sudo dnf install gflags snappy snappy-devel zlib zlib-devel bzip2 bzip2-devel lz4-devel libzstd-devel
+    sudo sh scripts/rocksdb-build/build.sh
+
+build-rocksdb-debian:
+    sudo apt install libsnappy-dev zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
+    sudo sh scripts/rocksdb-build/build.sh
+
 build: build-account-analyzer build-rocksdb-storage-reader
 
 clean:
