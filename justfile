@@ -10,6 +10,10 @@ build-account-analyzer:
     mkdir -p bin
     go build -o bin ./cmd/account-analyzer
 
+build-format-converter:
+    mkdir -p bin
+    go build -o bin ./cmd/format-converter
+
 build-rocksdb-storage-reader:
     mkdir -p bin
     CGO_CFLAGS="-I/usr/local/include" \

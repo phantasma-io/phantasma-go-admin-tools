@@ -1,4 +1,5 @@
 bin/account-analyzer
+bin/format-converter
 bin/rocksdb-storage-reader
 
 local-tests
