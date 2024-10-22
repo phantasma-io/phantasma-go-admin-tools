@@ -26,7 +26,8 @@ func dump() {
 				panic(err)
 			}
 
-			o.AddStringRecord(storage.ReadStringWithLengthByte(v))
+			vr := storage.KeyValueReaderNew(v)
+			o.AddStringRecord(vr.ReadString(true))
 		}
 
 		o.Flush()
