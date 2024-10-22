@@ -11,10 +11,10 @@ import (
 
 func DumpRow(connection *rocksdb.Connection, key []byte, value []byte, subkeys1 [][]byte, addresses []string, panicOnUnknownSubkey bool) (fmt.Stringer, bool) {
 	if bytes.HasPrefix(key, AccountAddressMap.Bytes()) {
-		kr := storage.KeyReaderNew(key)
+		kr := storage.KeyValueReaderNew(key)
 		kr.TrimPrefix(AccountAddressMap.Bytes())
 
-		if string(kr.GetKeyRemainder()) == "{count}" {
+		if string(kr.GetRemainder()) == "{count}" {
 			return storage.KeyValue{}, false
 		}
 
@@ -26,10 +26,12 @@ func DumpRow(connection *rocksdb.Connection, key []byte, value []byte, subkeys1 
 			}
 		}
 
-		name := storage.ReadStringWithLengthByte(value)
+		vr := storage.KeyValueReaderNew(value)
+		name := vr.ReadString(true)
+
 		return storage.Address{Address: address.String(), Name: name}, true
 	} else if bytes.HasPrefix(key, Balances.Bytes()) {
-		kr := storage.KeyReaderNew(key)
+		kr := storage.KeyValueReaderNew(key)
 		kr.TrimPrefix(Balances.Bytes())
 
 		tokenSymbol := kr.ReadOneOfStrings(subkeys1, []byte{'.'})
@@ -45,7 +47,8 @@ func DumpRow(connection *rocksdb.Connection, key []byte, value []byte, subkeys1 
 			}
 		}
 
-		amount := storage.ReadBigIntWithoutLengthByte(value)
+		vr := storage.KeyValueReaderNew(value)
+		amount := vr.ReadBigInt(false)
 
 		return storage.BalanceFungible{TokenSymbol: string(tokenSymbol),
 			Address: address.String(),
