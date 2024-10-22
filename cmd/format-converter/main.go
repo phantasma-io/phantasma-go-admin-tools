@@ -56,7 +56,7 @@ func main() {
 			panic("ReadFile call failed! Error: " + err.Error())
 		}
 
-		var balances []storage.Balance
+		var balances []storage.BalanceFungible
 		json.Unmarshal(byteValue, &balances)
 
 		for _, storageBalance := range balances {

@@ -4,12 +4,14 @@ import (
 	"bytes"
 
 	"github.com/linxGnu/grocksdb"
+	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
 )
 
 type DumpDataVisitor struct {
+	Connection           *rocksdb.Connection
 	KeyPrefix            []byte
 	SubKeys1             [][]byte
-	SubKeys2             [][]byte
+	Addresses            []string
 	PanicOnUnknownSubkey bool
 	Limit                uint
 	limitCounter         uint
@@ -17,6 +19,10 @@ type DumpDataVisitor struct {
 }
 
 func (v *DumpDataVisitor) Visit(it *grocksdb.Iterator) bool {
+	if v.Connection == nil {
+		panic("Connection must be set")
+	}
+
 	if v.Limit > 0 && v.limitCounter == v.Limit {
 		return false
 	}
@@ -32,7 +38,8 @@ func (v *DumpDataVisitor) Visit(it *grocksdb.Iterator) bool {
 	}
 
 	valueSlice := it.Value()
-	result, success := DumpRow(keySlice.Data(), valueSlice.Data(), v.SubKeys1, v.SubKeys2, v.PanicOnUnknownSubkey)
+
+	result, success := DumpRow(v.Connection, keySlice.Data(), valueSlice.Data(), v.SubKeys1, v.Addresses, v.PanicOnUnknownSubkey)
 	if success {
 		v.output.AddAnyRecord(result)
 	}

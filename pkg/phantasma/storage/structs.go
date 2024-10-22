@@ -1,6 +1,9 @@
 package storage
 
-import "math/big"
+import (
+	"math/big"
+	"strings"
+)
 
 type KeyValue struct {
 	Key   string
@@ -20,12 +23,22 @@ func (a Address) String() string {
 	return "Address: " + a.Address + " Name: " + a.Name
 }
 
-type Balance struct {
+type BalanceFungible struct {
 	TokenSymbol string
 	Address     string
 	Amount      *big.Int
 }
 
-func (b Balance) String() string {
+func (b BalanceFungible) String() string {
 	return "TokenSymbol: " + b.TokenSymbol + " Address: " + b.Address + " Amount: " + b.Amount.String()
+}
+
+type BalanceNonFungible struct {
+	TokenSymbol string
+	Address     string
+	Ids         []string
+}
+
+func (b BalanceNonFungible) String() string {
+	return "TokenSymbol: " + b.TokenSymbol + " Address: " + b.Address + " Ids: " + strings.Join(b.Ids, " ")
 }

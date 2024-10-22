@@ -50,20 +50,20 @@ func dump() {
 				v.SubKeys1 = append(v.SubKeys1, []byte(s))
 			}
 		}
-		if appOpts.SubKeys2 != "" {
-			subkeys2 := strings.Split(appOpts.SubKeys2, ",")
-			v.SubKeys2 = [][]byte{}
+		if appOpts.Addresses != "" {
+			subkeys2 := strings.Split(appOpts.Addresses, ",")
+			v.Addresses = []string{}
 			for _, s := range subkeys2 {
-				v.SubKeys2 = append(v.SubKeys2, []byte(s))
+				v.Addresses = append(v.Addresses, s)
 			}
 		}
 		v.PanicOnUnknownSubkey = appOpts.PanicOnUnknownSubkey
 
 		v.output = NewOutput(OutputFormatFromString(appOpts.OutputFormat))
 
-		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
-		c.Visit(&v)
-		c.Destroy()
+		v.Connection = rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
+		v.Connection.Visit(&v)
+		v.Connection.Destroy()
 
 		v.output.Flush()
 	}
