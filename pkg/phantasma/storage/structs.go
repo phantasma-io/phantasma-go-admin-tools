@@ -33,6 +33,42 @@ func (b BalanceFungible) String() string {
 	return "TokenSymbol: " + b.TokenSymbol + " Address: " + b.Address + " Amount: " + b.Amount.String()
 }
 
+type BalanceNonFungibleSingleRow struct {
+	TokenSymbol string
+	Address     string
+	Id          string
+}
+
+func (b BalanceNonFungibleSingleRow) String() string {
+	return "TokenSymbol: " + b.TokenSymbol + " Address: " + b.Address + " Ids: " + b.Id
+}
+
+// Converting []BalanceNonFungibleSingleRow to []*BalanceNonFungible, grouping balances by addresses
+func ConvertBalanceNonFungibleFromSingleRows(singleRowBalances []any) []any {
+	result := make([]any, 0)
+
+	for _, sAny := range singleRowBalances {
+
+		s := sAny.(BalanceNonFungibleSingleRow)
+
+		var targetBalance any
+		for _, r := range result {
+			if r.(*BalanceNonFungible).TokenSymbol == s.TokenSymbol && r.(*BalanceNonFungible).Address == s.Address {
+				targetBalance = r
+			}
+		}
+
+		if targetBalance == nil {
+			targetBalance = &BalanceNonFungible{TokenSymbol: s.TokenSymbol, Address: s.Address, Ids: []string{}}
+			result = append(result, targetBalance)
+		}
+
+		targetBalance.(*BalanceNonFungible).Ids = append(targetBalance.(*BalanceNonFungible).Ids, s.Id)
+	}
+
+	return result
+}
+
 type BalanceNonFungible struct {
 	TokenSymbol string
 	Address     string

@@ -66,6 +66,10 @@ func dump() {
 		v.Connection.Visit(&v)
 		v.Connection.Destroy()
 
+		if string(v.KeyPrefix) == Ids.String() {
+			v.output.AnyRecords = storage.ConvertBalanceNonFungibleFromSingleRows(v.output.AnyRecords)
+		}
+
 		v.output.Flush()
 	}
 }
