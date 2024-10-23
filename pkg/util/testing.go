@@ -39,7 +39,7 @@ func SerializPrintAndCompare[T io.Serializer](object T, reference []byte) {
 func SerializeDeserializePrintAndCompare[T io.Serializer](object T) {
 	serialized1 := io.Serialize[T](object)
 
-	io.Deserialize[T](serialized1)
+	object = io.Deserialize[T](serialized1)
 	serialized2 := io.Serialize[T](object)
 
 	if bytes.Compare(serialized1, serialized2) != 0 {
