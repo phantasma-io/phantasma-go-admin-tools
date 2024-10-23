@@ -33,7 +33,7 @@ func CheckIfTransactionHasEvent(tx response.TransactionResult,
 		if eventKind.IsTokenEvent() {
 			// Decode event data into event.TokenEventData structure
 			decoded, _ := hex.DecodeString(e.Data)
-			eventData = io.Deserialize[*event.TokenEventData](decoded, &event.TokenEventData{})
+			eventData = io.Deserialize[*event.TokenEventData](decoded)
 
 			if tokenSymbol != "" && tokenSymbol != eventData.Symbol {
 				continue

@@ -135,7 +135,7 @@ func applyEventToAccountState(e response.EventResult,
 
 	// Decode event data into event.TokenEventData structure
 	decoded, _ := hex.DecodeString(e.Data)
-	eventData = io.Deserialize[*event.TokenEventData](decoded, &event.TokenEventData{})
+	eventData = io.Deserialize[*event.TokenEventData](decoded)
 
 	if e.Address != a.Address {
 		return smStateChanged
@@ -251,7 +251,7 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 		if eventKind == event.TokenMint {
 			// Decode event data into event.TokenEventData structure
 			decoded, _ := hex.DecodeString(e.Data)
-			eventData := io.Deserialize[*event.TokenEventData](decoded, &event.TokenEventData{})
+			eventData := io.Deserialize[*event.TokenEventData](decoded)
 
 			if eventData.Symbol == "SOUL" {
 				// TODO needs better detection but for now should work
@@ -263,7 +263,7 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 		if eventKind.IsMarketEvent() {
 			// Decode event data into event.MarketEventData structure
 			decoded, _ := hex.DecodeString(e.Data)
-			eventData := io.Deserialize[*event.MarketEventData](decoded, &event.MarketEventData{})
+			eventData := io.Deserialize[*event.MarketEventData](decoded)
 
 			if eventData.QuoteSymbol == "SOUL" {
 				stakeClaimType = MarketEvent

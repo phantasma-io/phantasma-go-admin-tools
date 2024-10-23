@@ -23,7 +23,7 @@ func ParseAsAddress(b []byte, panicOnError bool) (bool, string) {
 		addressBytes = bytes.Join([][]byte{{34}, addressBytes}, []byte{})
 	}
 
-	a := io.Deserialize[*cryptography.Address](addressBytes, &cryptography.Address{})
+	a := io.Deserialize[*cryptography.Address](addressBytes)
 	return true, a.String()
 }
 
@@ -37,6 +37,6 @@ func ParseAsHash(b []byte, panicOnError bool) (bool, string) {
 	}
 
 	hashBytes := b
-	h := io.Deserialize[*cryptography.Hash](hashBytes, &cryptography.Hash{})
+	h := io.Deserialize[*cryptography.Hash](hashBytes)
 	return true, h.String()
 }

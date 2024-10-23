@@ -10,7 +10,7 @@ import (
 
 func ParseRow(key []byte, value []byte) (string, bool) {
 	if bytes.HasPrefix(key, []byte("GHOST.serie")) {
-		series := io.Deserialize[*contract.TokenSeries](value, &contract.TokenSeries{})
+		series := io.Deserialize[*contract.TokenSeries](value)
 
 		// Test serialization/deserialization
 		// util.SerializeDeserializePrintAndCompare(&series.ABI)

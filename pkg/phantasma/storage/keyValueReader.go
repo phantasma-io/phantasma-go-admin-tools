@@ -37,7 +37,7 @@ func (k *KeyValueReader) ReadAddress(hasLengthPrefix bool) *cryptography.Address
 		k.keyOrValue = k.keyOrValue[cryptography.Length:]
 	}
 
-	a := io.Deserialize[*cryptography.Address](prefixedAddress, &cryptography.Address{})
+	a := io.Deserialize[*cryptography.Address](prefixedAddress)
 
 	return a
 }
