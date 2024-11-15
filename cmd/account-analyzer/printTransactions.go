@@ -70,7 +70,7 @@ func getCurrentAddressState(address string) response.AccountResult {
 	return account
 }
 
-func printTransactions(address string, trackAccountState, useInitialState bool, orderDirection analysis.OrderDirection, verbose bool) {
+func printTransactions(address string, trackAccountState, useInitialState bool, orderDirection analysis.OrderDirection, verbose, printRelatedAddresses bool) {
 	if address == "" {
 		panic("Address should be set")
 	}
@@ -91,15 +91,20 @@ func printTransactions(address string, trackAccountState, useInitialState bool, 
 
 	if trackAccountState {
 		var states []analysis.AccountState
+		var relatedAddresses []string
 		if useInitialState {
-			states = analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward, verbose)
+			states, relatedAddresses = analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward, verbose)
 		} else {
-			states = analysis.TrackAccountStateByEvents(txes, &account, analysis.Forward, verbose)
+			states, relatedAddresses = analysis.TrackAccountStateByEvents(txes, &account, analysis.Forward, verbose)
 		}
 
-		rowsToPrint = analysis.DescribeTransactions(includedTxes,
-			states,
-			address, cfgSymbol, cfgPayloadFragment, cfgShowFungible, cfgShowNonfungible, cfgEventKinds, cfgShowFailedTxes)
+		if printRelatedAddresses {
+			rowsToPrint = append(rowsToPrint, relatedAddresses...)
+		} else {
+			rowsToPrint = analysis.DescribeTransactions(includedTxes,
+				states,
+				address, cfgSymbol, cfgPayloadFragment, cfgShowFungible, cfgShowNonfungible, cfgEventKinds, cfgShowFailedTxes)
+		}
 	} else {
 		for _, t := range includedTxes {
 			rowsToPrint = append(rowsToPrint, t.Hash)
@@ -147,7 +152,7 @@ func printSmStates(address string, startingDate int64, verbose bool) {
 	slices.Reverse(txes)
 
 	isSmNow := analysis.CheckIfSm(&account)
-	states := analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward, verbose)
+	states, _ := analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward, verbose)
 
 	// We process from now on to the past, so we need to revert states, latest state should be first
 	slices.Reverse(states)

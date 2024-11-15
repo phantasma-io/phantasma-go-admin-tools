@@ -241,7 +241,27 @@ func applyEventToAccountState(e response.EventResult,
 	return smStateChanged
 }
 
-func applyEventsToAccountState(es []response.EventResult, a *response.AccountResult, processingDirection ProcessingDirection, tx string, verbose bool) (bool, StakeClaimType) {
+func findPairEvent(es []response.EventResult, eventKind1 event.EventKind, amount string) response.EventResult {
+	for _, e := range es {
+		eventKind2 := event.Unknown
+		eventKind2.SetString(e.Kind)
+
+		if (eventKind1 == event.TokenSend && eventKind2 == event.TokenReceive) || (eventKind2 == event.TokenSend && eventKind1 == event.TokenReceive) {
+
+			// Decode event data into event.TokenEventData structure
+			decoded, _ := hex.DecodeString(e.Data)
+			eventData := io.Deserialize[*event.TokenEventData](decoded)
+
+			if eventData.Value.String() == amount {
+				return e
+			}
+		}
+	}
+
+	panic("Event pair not found")
+}
+
+func applyEventsToAccountState(es []response.EventResult, a *response.AccountResult, processingDirection ProcessingDirection, tx string, verbose bool) (bool, StakeClaimType, []string) {
 	stakeClaimType := Normal
 	smStateChanged := false
 	for _, e := range es {
@@ -273,6 +293,22 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 
 	}
 
+	var relatedAddresses []string
+	for _, e := range es {
+		eventKind := event.Unknown
+		eventKind.SetString(e.Kind)
+
+		if e.Address == a.Address && (eventKind == event.TokenSend || eventKind == event.TokenReceive) {
+
+			// Decode event data into event.TokenEventData structure
+			decoded, _ := hex.DecodeString(e.Data)
+			eventData := io.Deserialize[*event.TokenEventData](decoded)
+
+			pairEvent := findPairEvent(es, eventKind, eventData.Value.String())
+			relatedAddresses = append(relatedAddresses, pairEvent.Address)
+		}
+	}
+
 	for ei, e := range es {
 		var previousEvent *response.EventResult
 		if ei > 0 {
@@ -292,14 +328,14 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 
 	}
 
-	return smStateChanged, stakeClaimType
+	return smStateChanged, stakeClaimType, relatedAddresses
 }
 
-func applyTransactionToAccountState(tx response.TransactionResult, a *response.AccountResult, processingDirection ProcessingDirection, verbose bool) (bool, StakeClaimType) {
+func applyTransactionToAccountState(tx response.TransactionResult, a *response.AccountResult, processingDirection ProcessingDirection, verbose bool) (bool, StakeClaimType, []string) {
 	// Skip failed trasactions
 	if !tx.StateIsSuccess() {
 		// State din't change, saving previous one
-		return false, Normal
+		return false, Normal, nil
 	}
 
 	return applyEventsToAccountState(tx.Events, a, processingDirection, tx.Hash, verbose)
@@ -323,12 +359,14 @@ func resetUntrackedFields(account *response.AccountResult) {
 // processingDirection == Backward: We are moving from last tx to first
 // TrackAccountStateByEvents: Modifies account to the latest state using events in transactions, also returns account state array for each transaction
 func TrackAccountStateByEvents(txs []response.TransactionResult,
-	account *response.AccountResult, processingDirection ProcessingDirection, verbose bool) []AccountState {
+	account *response.AccountResult, processingDirection ProcessingDirection, verbose bool) ([]AccountState, []string) {
 
 	length := len(txs)
 	state := make([]AccountState, length, length)
 
 	resetUntrackedFields(account)
+
+	var relatedAddresses []string
 
 	for i := range txs {
 		var txIndex int
@@ -341,7 +379,13 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 		state[txIndex].Tx = txs[txIndex]
 		if processingDirection == Forward {
 			// Modifying state first, saving it later, because processingDirection is Forward
-			state[txIndex].SmStateChanged, state[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection, verbose)
+			var txRelatedAddresses []string
+			state[txIndex].SmStateChanged, state[txIndex].StakeClaimType, txRelatedAddresses = applyTransactionToAccountState(txs[txIndex], account, processingDirection, verbose)
+
+			if txRelatedAddresses != nil {
+				relatedAddresses = append(relatedAddresses, txRelatedAddresses...)
+			}
+
 			state[txIndex].State = *account.Clone()
 			// Detecting if account is an SM in this state
 			state[txIndex].IsSm = CheckIfSm(account)
@@ -351,9 +395,14 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 			// Detecting if account is an SM in this state
 			state[txIndex].IsSm = CheckIfSm(account)
 
-			state[txIndex].SmStateChanged, state[txIndex].StakeClaimType = applyTransactionToAccountState(txs[txIndex], account, processingDirection, verbose)
+			var txRelatedAddresses []string
+			state[txIndex].SmStateChanged, state[txIndex].StakeClaimType, txRelatedAddresses = applyTransactionToAccountState(txs[txIndex], account, processingDirection, verbose)
+
+			if txRelatedAddresses != nil {
+				relatedAddresses = append(relatedAddresses, txRelatedAddresses...)
+			}
 		}
 	}
 
-	return state
+	return state, relatedAddresses
 }

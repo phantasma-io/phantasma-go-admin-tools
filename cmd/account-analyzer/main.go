@@ -16,25 +16,26 @@ var clients []rpc.PhantasmaRPC
 var client rpc.PhantasmaRPC
 
 var appOpts struct {
-	Nexus             string `short:"n" long:"nexus" description:"testnet or mainnet"`
-	Order             string `long:"order" default:"asc" description:"asc or desc"`
-	ordering          analysis.OrderDirection
-	Output            string   `short:"o" long:"output" description:"Output folder"`
-	BlockCache        string   `long:"block-cache" description:"Path to folder containing blocks cache"`
-	Address           string   `short:"a" long:"address" description:"Address to analyse"`
-	AddressCsvPath    string   `long:"address-csv-path" description:"Path to CSV file with addresses"`
-	TokenSymbol       string   `long:"symbol" description:"Token symbol to track balance"`
-	EventKinds        []string `long:"event-kind" description:"Filter out transactions which do not have these events"`
-	ShowFungible      bool     `long:"show-fungible" description:"Show fungible token events and balances"`
-	ShowNonfungible   bool     `long:"show-nonfungible" description:"Show nonfungible token events and balances"`
-	ShowFailedTxes    bool     `long:"show-failed" description:"Shows failed transactions"`
-	GetInitialState   bool     `long:"get-initial-state" description:"Get initial state of address by replaying transactions in reverse order"`
-	GetSmStates       bool     `long:"get-sm-states" description:"Get per month SM states of address by replaying transactions in reverse order"`
-	GetAllBlocks      bool     `long:"get-all-blocks" description:"Get all chain blocks"`
-	GetKnownAddresses bool     `long:"get-known-addresses" description:"Get all known addresses"`
-	TrackAccountState bool     `long:"track-account-state" description:"Shows balance state of address for every displayed transaction"`
-	UseInitialState   bool     `long:"use-initial-state" description:"Use initial state of address while replaying transactions with track-account-state argument"`
-	Verbose           bool     `short:"v" long:"verbose" description:"Verbose mode"`
+	Nexus               string `short:"n" long:"nexus" description:"testnet or mainnet"`
+	Order               string `long:"order" default:"asc" description:"asc or desc"`
+	ordering            analysis.OrderDirection
+	Output              string   `short:"o" long:"output" description:"Output folder"`
+	BlockCache          string   `long:"block-cache" description:"Path to folder containing blocks cache"`
+	Address             string   `short:"a" long:"address" description:"Address to analyse"`
+	AddressCsvPath      string   `long:"address-csv-path" description:"Path to CSV file with addresses"`
+	TokenSymbol         string   `long:"symbol" description:"Token symbol to track balance"`
+	EventKinds          []string `long:"event-kind" description:"Filter out transactions which do not have these events"`
+	ShowFungible        bool     `long:"show-fungible" description:"Show fungible token events and balances"`
+	ShowNonfungible     bool     `long:"show-nonfungible" description:"Show nonfungible token events and balances"`
+	ShowFailedTxes      bool     `long:"show-failed" description:"Shows failed transactions"`
+	GetInitialState     bool     `long:"get-initial-state" description:"Get initial state of address by replaying transactions in reverse order"`
+	GetSmStates         bool     `long:"get-sm-states" description:"Get per month SM states of address by replaying transactions in reverse order"`
+	GetAllBlocks        bool     `long:"get-all-blocks" description:"Get all chain blocks"`
+	GetKnownAddresses   bool     `long:"get-known-addresses" description:"Get all known addresses"`
+	GetRelatedAddresses bool     `long:"get-related-addresses" description:"Get addresses which interacted with provided address"`
+	TrackAccountState   bool     `long:"track-account-state" description:"Shows balance state of address for every displayed transaction"`
+	UseInitialState     bool     `long:"use-initial-state" description:"Use initial state of address while replaying transactions with track-account-state argument"`
+	Verbose             bool     `short:"v" long:"verbose" description:"Verbose mode"`
 }
 
 func main() {
@@ -141,6 +142,6 @@ func main() {
 
 		analysis.GetAllBlocks(appOpts.Output, clients)
 	} else {
-		printTransactions(appOpts.Address, appOpts.TrackAccountState, appOpts.UseInitialState, appOpts.ordering, appOpts.Verbose)
+		printTransactions(appOpts.Address, appOpts.TrackAccountState, appOpts.UseInitialState, appOpts.ordering, appOpts.Verbose, appOpts.GetRelatedAddresses)
 	}
 }
