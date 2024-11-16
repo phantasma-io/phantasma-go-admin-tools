@@ -20,6 +20,8 @@ var appOpts struct {
 	Order               string `long:"order" default:"asc" description:"asc or desc"`
 	ordering            analysis.OrderDirection
 	Output              string   `short:"o" long:"output" description:"Output folder"`
+	Input               string   `short:"i" long:"input" description:"Data to process"`
+	Offset              uint     `long:"offset" description:"Offset for processed data"`
 	BlockCache          string   `long:"block-cache" description:"Path to folder containing blocks cache"`
 	Address             string   `short:"a" long:"address" description:"Address to analyse"`
 	AddressCsvPath      string   `long:"address-csv-path" description:"Path to CSV file with addresses"`
@@ -32,6 +34,8 @@ var appOpts struct {
 	GetSmStates         bool     `long:"get-sm-states" description:"Get per month SM states of address by replaying transactions in reverse order"`
 	GetAllBlocks        bool     `long:"get-all-blocks" description:"Get all chain blocks"`
 	GetKnownAddresses   bool     `long:"get-known-addresses" description:"Get all known addresses"`
+	AnalyzeTxes         bool     `long:"analyze-txes" description:"Runs analysis of all transactions from cached blocks"`
+	AnalyzeScript       bool     `long:"analyze-script" description:"Runs analysis of specified script"`
 	GetRelatedAddresses bool     `long:"get-related-addresses" description:"Get addresses which interacted with provided address"`
 	TrackAccountState   bool     `long:"track-account-state" description:"Shows balance state of address for every displayed transaction"`
 	UseInitialState     bool     `long:"use-initial-state" description:"Use initial state of address while replaying transactions with track-account-state argument"`
@@ -141,6 +145,23 @@ func main() {
 		}
 
 		analysis.GetAllBlocks(appOpts.Output, clients)
+	} else if appOpts.AnalyzeTxes {
+		if appOpts.BlockCache == "" {
+			panic("--block-cache argument is mandatory when --analyze-txes")
+		}
+
+		analysis.TxScriptsAnalyzer(appOpts.BlockCache, appOpts.Verbose, clients)
+	} else if appOpts.AnalyzeScript {
+		if appOpts.Input == "" {
+			panic("--input argument is mandatory when --analyze-script")
+		}
+
+		calls := make(map[string]uint)
+		analysis.ScriptsAnalyzer(appOpts.Input, appOpts.Offset, 18, appOpts.Verbose, calls, clients)
+
+		for k, n := range calls {
+			fmt.Printf("%s: %d\n", k, n)
+		}
 	} else {
 		printTransactions(appOpts.Address, appOpts.TrackAccountState, appOpts.UseInitialState, appOpts.ordering, appOpts.Verbose, appOpts.GetRelatedAddresses)
 	}
