@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
 )
 
 type OutputFormat int
@@ -38,11 +40,12 @@ func OutputFormatFromString(outputFormat string) OutputFormat {
 }
 
 type Output struct {
-	format     OutputFormat
-	csv        *csv.Writer
-	records    []string
-	AnyRecords []any
-	outputFile *os.File
+	format      OutputFormat
+	csv         *csv.Writer
+	jsonRecords []string
+	csvRecords  [][]string
+	AnyRecords  []any
+	outputFile  *os.File
 }
 
 func (o *Output) Init(format OutputFormat) {
@@ -58,14 +61,14 @@ func (o *Output) Init(format OutputFormat) {
 
 	if o.format == CSV {
 		if appOpts.Output != "" {
-			o.csv = csv.NewWriter(io.Writer(os.Stdout))
-		} else {
 			o.csv = csv.NewWriter(io.Writer(o.outputFile))
+		} else {
+			o.csv = csv.NewWriter(io.Writer(os.Stdout))
 		}
-		o.records = []string{}
+		o.csvRecords = [][]string{}
 		o.AnyRecords = []any{}
 	} else if o.format == JSON {
-		o.records = []string{}
+		o.jsonRecords = []string{}
 		o.AnyRecords = []any{}
 	}
 }
@@ -85,16 +88,20 @@ func NewOutput(format OutputFormat) *Output {
 }
 
 func (o *Output) AddStringRecord(r string) {
-	if o.format == CSV || o.format == JSON {
-		o.records = append(o.records, r)
+	if o.format == CSV {
+		o.csvRecords = append(o.csvRecords, []string{r})
+	} else if o.format == JSON {
+		o.jsonRecords = append(o.jsonRecords, r)
 	} else if o.format == PLAIN {
 		fmt.Println(r)
+	} else {
+		panic("This method supports only json/plain")
 	}
 }
 
-func (o *Output) AddAnyRecord(r fmt.Stringer) {
+func (o *Output) AddAnyRecord(r storage.Exportable) {
 	if o.format == CSV {
-		o.records = append(o.records, r.String())
+		o.csvRecords = append(o.csvRecords, r.ToSlice())
 	} else if o.format == JSON {
 		o.AnyRecords = append(o.AnyRecords, r)
 	} else if o.format == PLAIN {
@@ -104,14 +111,14 @@ func (o *Output) AddAnyRecord(r fmt.Stringer) {
 
 func (o *Output) Flush() {
 	if o.format == CSV {
-		o.csv.Write([]string(o.records))
+		o.csv.WriteAll(o.csvRecords)
 
 		o.csv.Flush()
 	} else if o.format == JSON {
 		var row []byte
 		var err error
-		if len(o.records) > 0 {
-			row, err = json.Marshal(o.records)
+		if len(o.jsonRecords) > 0 {
+			row, err = json.Marshal(o.jsonRecords)
 		} else {
 			row, err = json.Marshal(o.AnyRecords)
 		}

@@ -14,6 +14,10 @@ func (k KeyValue) String() string {
 	return "Key: " + k.Key + " Value: " + k.Value
 }
 
+func (k KeyValue) ToSlice() []string {
+	return []string{k.Key, k.Value}
+}
+
 type Address struct {
 	Address string
 	Name    string
@@ -21,6 +25,10 @@ type Address struct {
 
 func (a Address) String() string {
 	return "Address: " + a.Address + " Name: " + a.Name
+}
+
+func (a Address) ToSlice() []string {
+	return []string{a.Address, a.Name}
 }
 
 type BalanceFungible struct {
@@ -33,6 +41,10 @@ func (b BalanceFungible) String() string {
 	return "TokenSymbol: " + b.TokenSymbol + " Address: " + b.Address + " Amount: " + b.Amount.String()
 }
 
+func (b BalanceFungible) ToSlice() []string {
+	return []string{b.TokenSymbol, b.Address, b.Amount.String()}
+}
+
 type BalanceNonFungibleSingleRow struct {
 	TokenSymbol string
 	Address     string
@@ -41,6 +53,10 @@ type BalanceNonFungibleSingleRow struct {
 
 func (b BalanceNonFungibleSingleRow) String() string {
 	return "TokenSymbol: " + b.TokenSymbol + " Address: " + b.Address + " Ids: " + b.Id
+}
+
+func (b BalanceNonFungibleSingleRow) ToSlice() []string {
+	return []string{b.TokenSymbol, b.Address, b.Id}
 }
 
 // Converting []BalanceNonFungibleSingleRow to []*BalanceNonFungible, grouping balances by addresses

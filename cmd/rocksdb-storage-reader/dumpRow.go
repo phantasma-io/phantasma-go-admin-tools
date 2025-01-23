@@ -3,15 +3,14 @@ package main
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"slices"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
 )
 
-func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []byte, subkeys1 [][]byte, addresses []string, panicOnUnknownSubkey bool) (fmt.Stringer, bool) {
-	if bytes.HasPrefix(key, AccountAddressMap.Bytes()) {
+func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []byte, subkeys1 [][]byte, addresses []string, panicOnUnknownSubkey bool) (storage.Exportable, bool) {
+	if appOpts.DumpAddresses {
 		kr := storage.KeyValueReaderNew(key)
 		kr.TrimPrefix(AccountAddressMap.Bytes())
 
