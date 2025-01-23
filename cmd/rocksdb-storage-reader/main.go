@@ -16,6 +16,7 @@ var appOpts struct {
 	ListColumnFamilies          bool   `long:"list-column-families" description:"Lists column families available in the database"`
 	DumpData                    bool   `short:"d" long:"dump" description:"Dump data of given column family"`
 	DumpAddresses               bool   `long:"dump-addresses" description:"Dump all addresses"`
+	DumpTokenSymbols            bool   `long:"dump-token-symbols" description:"Dump token symbols of all fungible and non-fungible tokens"`
 	DumpBalances                bool   `long:"dump-balances" description:"Dump balances of all fungible tokens for all addresses"`
 	DumpBalancesNft             bool   `long:"dump-balances-nft" description:"Dump balances of all non-fungible tokens for all addresses"`
 	DumpBlockHashes             bool   `long:"dump-block-hashes" description:"Dump all block hashes"`
@@ -111,7 +112,7 @@ func main() {
 		return
 	}
 
-	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpBalances || appOpts.DumpBalancesNft || appOpts.DumpBlockHashes || appOpts.DumpBlocks {
+	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpTokenSymbols || appOpts.DumpBalances || appOpts.DumpBalancesNft || appOpts.DumpBlockHashes || appOpts.DumpBlocks {
 		dump()
 	}
 }
