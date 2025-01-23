@@ -17,6 +17,16 @@ type DumpDataMapIterator struct {
 	output       *Output
 }
 
+func (it *DumpDataMapIterator) Init(dbPath, columnFamily, outputFormat string) {
+	it.Connection = rocksdb.NewConnection(dbPath, columnFamily)
+	it.output = NewOutput(OutputFormatFromString(outputFormat))
+}
+
+func (it *DumpDataMapIterator) Uninit() {
+	it.Connection.Destroy()
+	it.output.Flush()
+}
+
 func (it *DumpDataMapIterator) Iterate(index *big.Int) bool {
 	if it.Connection == nil {
 		panic("Connection must be set")

@@ -18,6 +18,16 @@ type DumpDataVisitor struct {
 	output               *Output
 }
 
+func (v *DumpDataVisitor) Init(dbPath, columnFamily, outputFormat string) {
+	v.Connection = rocksdb.NewConnection(dbPath, columnFamily)
+	v.output = NewOutput(OutputFormatFromString(outputFormat))
+}
+
+func (v *DumpDataVisitor) Uninit() {
+	v.Connection.Destroy()
+	v.output.Flush()
+}
+
 func (v *DumpDataVisitor) Visit(it *grocksdb.Iterator) bool {
 	if v.Connection == nil {
 		panic("Connection must be set")

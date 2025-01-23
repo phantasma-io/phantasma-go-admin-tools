@@ -6,21 +6,18 @@ import (
 	"strings"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
-	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
 )
 
 func dump() {
 	if appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpTokenSymbols {
 		it := DumpDataMapIterator{Limit: appOpts.Limit}
+		it.Init(appOpts.DbPath, appOpts.ColumnFamily, appOpts.OutputFormat)
 
 		if appOpts.DumpBlockHashes || appOpts.DumpBlocks {
 			it.KeyPrefix = []byte(Height)
 		} else if appOpts.DumpTokenSymbols {
 			it.KeyPrefix = []byte(TokensList)
 		}
-
-		it.Connection = rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
-		it.output = NewOutput(OutputFormatFromString(appOpts.OutputFormat))
 
 		count, err := it.Connection.GetAsBigInt(storage.CountKey([]byte(it.KeyPrefix)))
 		if err != nil {
@@ -36,11 +33,10 @@ func dump() {
 			it.Iterate(i)
 		}
 
-		it.Connection.Destroy()
-
-		it.output.Flush()
+		it.Uninit()
 	} else {
 		v := DumpDataVisitor{Limit: appOpts.Limit}
+		v.Init(appOpts.DbPath, appOpts.ColumnFamily, appOpts.OutputFormat)
 
 		if appOpts.DumpAddresses {
 			v.KeyPrefix = []byte(AccountAddressMap)
@@ -67,16 +63,12 @@ func dump() {
 		}
 		v.PanicOnUnknownSubkey = appOpts.PanicOnUnknownSubkey
 
-		v.output = NewOutput(OutputFormatFromString(appOpts.OutputFormat))
-
-		v.Connection = rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
 		v.Connection.Visit(&v)
-		v.Connection.Destroy()
 
 		if string(v.KeyPrefix) == Ids.String() {
 			v.output.AnyRecords = storage.ConvertBalanceNonFungibleFromSingleRows(v.output.AnyRecords)
 		}
 
-		v.output.Flush()
+		v.Uninit()
 	}
 }
