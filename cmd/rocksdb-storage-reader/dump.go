@@ -72,10 +72,9 @@ func dump() {
 			v.KeyPrefix = []byte(appOpts.BaseKey)
 		}
 
-		if appOpts.SubKeys != "" {
-			subkeys1 := strings.Split(appOpts.SubKeys, ",")
+		if len(appOpts.subKeysSlice) > 0 {
 			v.SubKeys1 = [][]byte{}
-			for _, s := range subkeys1 {
+			for _, s := range appOpts.subKeysSlice {
 				v.SubKeys1 = append(v.SubKeys1, []byte(s))
 			}
 		}

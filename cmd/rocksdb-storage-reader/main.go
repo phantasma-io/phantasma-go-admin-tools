@@ -1,7 +1,10 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
@@ -18,6 +21,7 @@ var appOpts struct {
 	DumpBlocks                  bool   `long:"dump-blocks" description:"Dump all blocks"`
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
 	SubKeys                     string `long:"subkeys" description:"Subkeys for given base key which needs to be dumped (coma-separated)"`
+	SubKeysCsv                  string `long:"subkeys-csv" description:"Subkeys for given base key which needs to be dumped (path to csv file)"`
 	Addresses                   string `long:"addresses" description:"Addresses for filtering out results"`
 	PanicOnUnknownSubkey        bool   `long:"panic-on-unknown-subkey" description:"Crash if unknown subkey was detected"`
 	ListKeysWithUnknownBaseKeys bool   `long:"list-keys-with-unknown-base-keys" description:"Show keys with unknown base keys"`
@@ -29,12 +33,40 @@ var appOpts struct {
 	OutputFormat                string `long:"output-format" description:"Format to use for data output: CSV, JSON, PLAIN"`
 	Limit                       uint   `long:"limit" description:"Limit processing with given amount of rows"`
 	Verbose                     bool   `short:"v" long:"verbose" description:"Verbose mode"`
+
+	subKeysSlice []string
 }
 
 func main() {
 	_, err := flags.Parse(&appOpts)
 	if err != nil {
 		panic(err)
+	}
+
+	if appOpts.SubKeysCsv != "" {
+		// We parse CSV file into appOpts.SubKeys slice
+
+		if appOpts.SubKeys != "" {
+			panic("subkeys-csv and subkeys keys cannot be used at the same time")
+		}
+
+		f, err := os.Open(appOpts.SubKeysCsv)
+		if err != nil {
+			panic(err)
+		}
+		defer f.Close()
+
+		csvReader := csv.NewReader(f)
+		data, err := csvReader.ReadAll()
+		if err != nil {
+			panic(err)
+		}
+
+		for _, k := range data {
+			appOpts.subKeysSlice = append(appOpts.subKeysSlice, k[0])
+		}
+	} else if appOpts.SubKeys != "" {
+		appOpts.subKeysSlice = strings.Split(appOpts.SubKeys, ",")
 	}
 
 	if appOpts.ListKeysWithUnknownBaseKeys {
