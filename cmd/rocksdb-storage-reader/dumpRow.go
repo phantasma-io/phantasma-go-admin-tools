@@ -29,6 +29,9 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 		name := vr.ReadString(true)
 
 		return storage.Address{Address: address.String(), Name: name}, true
+	} else if appOpts.DumpTokenSymbols {
+		vr := storage.KeyValueReaderNew(value)
+		return storage.KeyValue{Key: "Symbol", Value: vr.ReadString(true)}, true
 	} else if appOpts.DumpBalances {
 		kr := storage.KeyValueReaderNew(key)
 		kr.TrimPrefix(Balances.Bytes())

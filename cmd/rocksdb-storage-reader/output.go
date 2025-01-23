@@ -87,19 +87,7 @@ func NewOutput(format OutputFormat) *Output {
 	return o
 }
 
-func (o *Output) AddStringRecord(r string) {
-	if o.format == CSV {
-		o.csvRecords = append(o.csvRecords, []string{r})
-	} else if o.format == JSON {
-		o.jsonRecords = append(o.jsonRecords, r)
-	} else if o.format == PLAIN {
-		fmt.Println(r)
-	} else {
-		panic("This method supports only json/plain")
-	}
-}
-
-func (o *Output) AddAnyRecord(r storage.Exportable) {
+func (o *Output) AddRecord(r storage.Exportable) {
 	if o.format == CSV {
 		o.csvRecords = append(o.csvRecords, r.ToSlice())
 	} else if o.format == JSON {

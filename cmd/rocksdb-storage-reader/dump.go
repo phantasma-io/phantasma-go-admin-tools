@@ -10,8 +10,14 @@ import (
 )
 
 func dump() {
-	if appOpts.DumpBlockHashes || appOpts.DumpBlocks {
-		it := DumpDataMapIterator{Limit: appOpts.Limit, KeyPrefix: []byte(Height)}
+	if appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpTokenSymbols {
+		it := DumpDataMapIterator{Limit: appOpts.Limit}
+
+		if appOpts.DumpBlockHashes || appOpts.DumpBlocks {
+			it.KeyPrefix = []byte(Height)
+		} else if appOpts.DumpTokenSymbols {
+			it.KeyPrefix = []byte(TokensList)
+		}
 
 		it.Connection = rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
 		it.output = NewOutput(OutputFormatFromString(appOpts.OutputFormat))
@@ -33,30 +39,6 @@ func dump() {
 		it.Connection.Destroy()
 
 		it.output.Flush()
-	} else if appOpts.DumpTokenSymbols {
-		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
-
-		count, err := c.GetAsBigInt(storage.CountKey([]byte(TokensList)))
-		if err != nil {
-			panic(err)
-		}
-
-		o := NewOutput(OutputFormatFromString(appOpts.OutputFormat))
-
-		var one = big.NewInt(1)
-		for i := big.NewInt(0); i.Cmp(count) < 0; i.Add(i, one) {
-			v, err := c.Get(storage.ElementKey([]byte(TokensList), i))
-			if err != nil {
-				panic(err)
-			}
-
-			vr := storage.KeyValueReaderNew(v)
-			o.AddStringRecord(vr.ReadString(true))
-		}
-
-		o.Flush()
-
-		c.Destroy()
 	} else {
 		v := DumpDataVisitor{Limit: appOpts.Limit}
 

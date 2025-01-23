@@ -38,7 +38,7 @@ func (it *DumpDataMapIterator) Iterate(index *big.Int) bool {
 	keyAlt := big.NewInt(0).Add(index, big.NewInt(1))
 	result, success := DumpRow(it.Connection, key, keyAlt.String(), value, it.SubKeys1, it.Addresses, false)
 	if success {
-		it.output.AddAnyRecord(result)
+		it.output.AddRecord(result)
 	}
 
 	return true

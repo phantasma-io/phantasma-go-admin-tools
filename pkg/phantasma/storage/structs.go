@@ -15,7 +15,7 @@ func (k KeyValue) String() string {
 }
 
 func (k KeyValue) ToSlice() []string {
-	return []string{k.Key, k.Value}
+	return []string{k.Value}
 }
 
 type Address struct {
