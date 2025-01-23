@@ -39,7 +39,7 @@ func (v *DumpDataVisitor) Visit(it *grocksdb.Iterator) bool {
 
 	valueSlice := it.Value()
 
-	result, success := DumpRow(v.Connection, keySlice.Data(), valueSlice.Data(), v.SubKeys1, v.Addresses, v.PanicOnUnknownSubkey)
+	result, success := DumpRow(v.Connection, keySlice.Data(), "", valueSlice.Data(), v.SubKeys1, v.Addresses, v.PanicOnUnknownSubkey)
 	if success {
 		v.output.AddAnyRecord(result)
 	}

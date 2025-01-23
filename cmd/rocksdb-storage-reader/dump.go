@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/big"
 	"strings"
 
@@ -9,7 +10,34 @@ import (
 )
 
 func dump() {
-	if appOpts.BaseKey == TokensList.String() {
+	if appOpts.DumpBlockHashes || appOpts.DumpBlocks {
+		it := DumpDataMapIterator{Limit: appOpts.Limit}
+
+		if appOpts.DumpBlockHashes || appOpts.DumpBlocks {
+			it.KeyPrefix = []byte(Height)
+		}
+
+		it.Connection = rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
+		it.output = NewOutput(OutputFormatFromString(appOpts.OutputFormat))
+
+		count, err := it.Connection.GetAsBigInt(storage.CountKey([]byte(it.KeyPrefix)))
+		if err != nil {
+			panic(err)
+		}
+
+		if appOpts.Verbose {
+			fmt.Printf("Map size: %d\n", count)
+		}
+
+		var one = big.NewInt(1)
+		for i := big.NewInt(0); i.Cmp(count) < 0; i.Add(i, one) {
+			it.Iterate(i)
+		}
+
+		it.Connection.Destroy()
+
+		it.output.Flush()
+	} else if appOpts.BaseKey == TokensList.String() {
 		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
 
 		count, err := c.GetAsBigInt(storage.CountKey([]byte(appOpts.BaseKey)))

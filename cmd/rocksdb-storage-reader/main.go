@@ -14,6 +14,8 @@ var appOpts struct {
 	DumpData                    bool   `short:"d" long:"dump" description:"Dump data of given column family"`
 	DumpAddresses               bool   `long:"dump-addresses" description:"Dump all addresses"`
 	DumpBalances                bool   `long:"dump-balances" description:"Dump balances of all fungible tokens for all addresses"`
+	DumpBlockHashes             bool   `long:"dump-block-hashes" description:"Dump all block hashes"`
+	DumpBlocks                  bool   `long:"dump-blocks" description:"Dump all blocks"`
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
 	SubKeys                     string `long:"subkeys" description:"Subkeys for given base key which needs to be dumped (coma-separated)"`
 	Addresses                   string `long:"addresses" description:"Addresses for filtering out results"`
@@ -23,6 +25,7 @@ var appOpts struct {
 	ListUniqueSubKeys           bool   `long:"list-unique-sub-keys" description:"Show unique sub keys for given base key. base-key argument is mandatory if this flag is passed"`
 	ParseSubkeyAsAddress        bool   `long:"parse-subkey-as-address" description:"Try parsing subkeys as addresses"`
 	ParseSubkeyAsHash           bool   `long:"parse-subkey-as-hash" description:"Try parsing subkeys as hashes"`
+	Output                      string `long:"output" description:"Output file path, if not set everything is printed into standard output"`
 	OutputFormat                string `long:"output-format" description:"Format to use for data output: CSV, JSON, PLAIN"`
 	Limit                       uint   `long:"limit" description:"Limit processing with given amount of rows"`
 	Verbose                     bool   `short:"v" long:"verbose" description:"Verbose mode"`
@@ -75,7 +78,7 @@ func main() {
 		return
 	}
 
-	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpBalances {
+	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpBalances || appOpts.DumpBlockHashes || appOpts.DumpBlocks {
 		dump()
 	}
 }

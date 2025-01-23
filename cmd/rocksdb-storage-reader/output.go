@@ -42,18 +42,38 @@ type Output struct {
 	csv        *csv.Writer
 	records    []string
 	AnyRecords []any
+	outputFile *os.File
 }
 
 func (o *Output) Init(format OutputFormat) {
 	o.format = format
 
+	if appOpts.Output != "" {
+		var err error
+		o.outputFile, err = os.OpenFile(appOpts.Output, os.O_CREATE|os.O_WRONLY, 0644)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	if o.format == CSV {
-		o.csv = csv.NewWriter(io.Writer(os.Stdout))
+		if appOpts.Output != "" {
+			o.csv = csv.NewWriter(io.Writer(os.Stdout))
+		} else {
+			o.csv = csv.NewWriter(io.Writer(o.outputFile))
+		}
 		o.records = []string{}
 		o.AnyRecords = []any{}
 	} else if o.format == JSON {
 		o.records = []string{}
 		o.AnyRecords = []any{}
+	}
+}
+
+// TODO call it
+func (o *Output) Uninit() {
+	if appOpts.Output != "" && o.outputFile != nil {
+		o.outputFile.Close()
 	}
 }
 
@@ -99,6 +119,11 @@ func (o *Output) Flush() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(string(row))
+
+		if appOpts.Output != "" {
+			o.outputFile.WriteString(string(row))
+		} else {
+			fmt.Println(string(row))
+		}
 	}
 }

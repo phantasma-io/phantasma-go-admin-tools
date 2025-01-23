@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"slices"
 
@@ -9,7 +10,7 @@ import (
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
 )
 
-func DumpRow(connection *rocksdb.Connection, key []byte, value []byte, subkeys1 [][]byte, addresses []string, panicOnUnknownSubkey bool) (fmt.Stringer, bool) {
+func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []byte, subkeys1 [][]byte, addresses []string, panicOnUnknownSubkey bool) (fmt.Stringer, bool) {
 	if bytes.HasPrefix(key, AccountAddressMap.Bytes()) {
 		kr := storage.KeyValueReaderNew(key)
 		kr.TrimPrefix(AccountAddressMap.Bytes())
@@ -81,6 +82,18 @@ func DumpRow(connection *rocksdb.Connection, key []byte, value []byte, subkeys1 
 		return storage.BalanceNonFungibleSingleRow{TokenSymbol: tokenSymbol,
 			Address: address.String(),
 			Id:      tokenId.String()}, true
+	} else if appOpts.DumpBlockHashes || appOpts.DumpBlocks {
+		if appOpts.DumpBlockHashes {
+			value = value[1:]     // First byte is length
+			slices.Reverse(value) // Hash is stored in reversed order.
+			return storage.KeyValue{Key: keyAlt, Value: hex.EncodeToString(value)}, true
+		} else if appOpts.DumpBlocks {
+			block, err := connection.Get(append(Blocks.Bytes(), value...))
+			if err != nil {
+				panic(err)
+			}
+			return storage.KeyValue{Key: keyAlt, Value: hex.EncodeToString(block)}, true
+		}
 	}
 
 	return storage.KeyValue{Key: string(key), Value: string(value)}, false
