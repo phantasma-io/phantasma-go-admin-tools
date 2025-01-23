@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/hex"
 	"slices"
 
@@ -30,7 +29,7 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 		name := vr.ReadString(true)
 
 		return storage.Address{Address: address.String(), Name: name}, true
-	} else if bytes.HasPrefix(key, Balances.Bytes()) {
+	} else if appOpts.DumpBalances {
 		kr := storage.KeyValueReaderNew(key)
 		kr.TrimPrefix(Balances.Bytes())
 
@@ -53,7 +52,7 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 		return storage.BalanceFungible{TokenSymbol: string(tokenSymbol),
 			Address: address.String(),
 			Amount:  amount}, true
-	} else if bytes.HasPrefix(key, Ids.Bytes()) {
+	} else if appOpts.DumpBalancesNft {
 		// OwnershipSheet: '.ids.symbol' + address.ToByteArray()
 
 		kr := storage.KeyValueReaderNew(key)

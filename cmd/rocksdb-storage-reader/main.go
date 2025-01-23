@@ -17,6 +17,7 @@ var appOpts struct {
 	DumpData                    bool   `short:"d" long:"dump" description:"Dump data of given column family"`
 	DumpAddresses               bool   `long:"dump-addresses" description:"Dump all addresses"`
 	DumpBalances                bool   `long:"dump-balances" description:"Dump balances of all fungible tokens for all addresses"`
+	DumpBalancesNft             bool   `long:"dump-balances-nft" description:"Dump balances of all non-fungible tokens for all addresses"`
 	DumpBlockHashes             bool   `long:"dump-block-hashes" description:"Dump all block hashes"`
 	DumpBlocks                  bool   `long:"dump-blocks" description:"Dump all blocks"`
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
@@ -110,7 +111,7 @@ func main() {
 		return
 	}
 
-	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpBalances || appOpts.DumpBlockHashes || appOpts.DumpBlocks {
+	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpBalances || appOpts.DumpBalancesNft || appOpts.DumpBlockHashes || appOpts.DumpBlocks {
 		dump()
 	}
 }

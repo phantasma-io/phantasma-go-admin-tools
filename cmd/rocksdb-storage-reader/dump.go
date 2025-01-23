@@ -68,6 +68,8 @@ func dump() {
 			v.KeyPrefix = []byte(AccountAddressMap)
 		} else if appOpts.DumpBalances {
 			v.KeyPrefix = []byte(Balances)
+		} else if appOpts.DumpBalancesNft {
+			v.KeyPrefix = []byte(Ids)
 		} else if appOpts.BaseKey != "" {
 			v.KeyPrefix = []byte(appOpts.BaseKey)
 		}
