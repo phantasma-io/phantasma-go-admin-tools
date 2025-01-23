@@ -53,7 +53,7 @@ func (o *Output) Init(format OutputFormat) {
 
 	if appOpts.Output != "" {
 		var err error
-		o.outputFile, err = os.OpenFile(appOpts.Output, os.O_CREATE|os.O_WRONLY, 0644)
+		o.outputFile, err = os.OpenFile(appOpts.Output, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0644)
 		if err != nil {
 			panic(err)
 		}
