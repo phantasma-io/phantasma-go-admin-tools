@@ -6,10 +6,38 @@ import (
 	"strings"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
+	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
 )
 
 func dump() {
-	if appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpTokenSymbols || appOpts.DumpStakingClaims {
+	if appOpts.DumpStakes {
+		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
+		o := NewOutput(OutputFormatFromString(appOpts.OutputFormat))
+
+		if appOpts.Verbose {
+			fmt.Printf("Addresses count: %d\n", len(appOpts.subKeysSlice))
+		}
+		for _, address := range appOpts.subKeysSlice {
+			// Go through all addresses
+
+			key := storage.KeyBuilderNew().SetBytes([]byte(".stake._stakeMap")).AppendAddressPrefixedAsString(address).Build()
+
+			value, err := c.Get(key)
+			if err != nil {
+				panic(err)
+			}
+			if value == nil {
+				continue
+			}
+			result, success := DumpRow(c, key, address, value, nil, nil, false)
+			if success {
+				o.AddRecord(result)
+			}
+		}
+
+		c.Destroy()
+		o.Flush()
+	} else if appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpTokenSymbols || appOpts.DumpStakingClaims {
 		it := DumpDataMapIterator{Limit: appOpts.Limit}
 		it.Init(appOpts.DbPath, appOpts.ColumnFamily, appOpts.OutputFormat)
 

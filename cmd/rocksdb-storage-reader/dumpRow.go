@@ -37,6 +37,9 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 	} else if appOpts.DumpStakingClaims {
 		energyClaim := io.Deserialize[*stake.EnergyClaim](value)
 		return storage.KeyValueJson{Key: keyAlt, Value: energyClaim}, true
+	} else if appOpts.DumpStakes {
+		energyStake := io.Deserialize[*stake.EnergyStake](value)
+		return storage.KeyValueJson{Key: keyAlt, Value: energyStake}, true
 	} else if appOpts.DumpBalances {
 		kr := storage.KeyValueReaderNew(key)
 		kr.TrimPrefix(Balances.Bytes())

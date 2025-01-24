@@ -39,6 +39,17 @@ func (k *KeyBuilder) AppendAddressAsString(address string) *KeyBuilder {
 	return k
 }
 
+func (k *KeyBuilder) AppendAddressPrefixed(address cryptography.Address) *KeyBuilder {
+	k.key = append(k.key, address.BytesPrefixed()...)
+	return k
+}
+
+func (k *KeyBuilder) AppendAddressPrefixedAsString(address string) *KeyBuilder {
+	a, _ := cryptography.FromString(address)
+	k.AppendAddressPrefixed(a)
+	return k
+}
+
 func (k *KeyBuilder) Build() []byte {
 	return k.key
 }
