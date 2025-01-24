@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"encoding/json"
 	"math/big"
 	"strings"
 )
@@ -16,6 +17,27 @@ func (k KeyValue) String() string {
 
 func (k KeyValue) ToSlice() []string {
 	return []string{k.Value}
+}
+
+type KeyValueJson struct {
+	Key   string
+	Value any
+}
+
+func (k KeyValueJson) String() string {
+	j, err := json.Marshal(k.Value)
+	if err != nil {
+		panic(err)
+	}
+	return "Key: " + k.Key + " Value: " + string(j)
+}
+
+func (k KeyValueJson) ToSlice() []string {
+	j, err := json.Marshal(k.Value)
+	if err != nil {
+		panic(err)
+	}
+	return []string{string(j)}
 }
 
 type Address struct {

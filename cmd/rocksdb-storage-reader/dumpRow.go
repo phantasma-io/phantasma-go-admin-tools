@@ -6,6 +6,8 @@ import (
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
+	"github.com/phantasma-io/phantasma-go/pkg/domain/stake"
+	"github.com/phantasma-io/phantasma-go/pkg/io"
 )
 
 func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []byte, subkeys1 [][]byte, addresses []string, panicOnUnknownSubkey bool) (storage.Exportable, bool) {
@@ -32,6 +34,9 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 	} else if appOpts.DumpTokenSymbols {
 		vr := storage.KeyValueReaderNew(value)
 		return storage.KeyValue{Key: "Symbol", Value: vr.ReadString(true)}, true
+	} else if appOpts.DumpStakingClaims {
+		energyClaim := io.Deserialize[*stake.EnergyClaim](value)
+		return storage.KeyValueJson{Key: keyAlt, Value: energyClaim}, true
 	} else if appOpts.DumpBalances {
 		kr := storage.KeyValueReaderNew(key)
 		kr.TrimPrefix(Balances.Bytes())

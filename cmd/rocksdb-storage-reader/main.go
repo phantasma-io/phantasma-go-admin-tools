@@ -21,6 +21,7 @@ var appOpts struct {
 	DumpBalancesNft             bool   `long:"dump-balances-nft" description:"Dump balances of all non-fungible tokens for all addresses"`
 	DumpBlockHashes             bool   `long:"dump-block-hashes" description:"Dump all block hashes"`
 	DumpBlocks                  bool   `long:"dump-blocks" description:"Dump all blocks"`
+	DumpStakingClaims           bool   `long:"dump-staking-claims" description:"Dump staking claims"`
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
 	SubKeys                     string `long:"subkeys" description:"Subkeys for given base key which needs to be dumped (coma-separated)"`
 	SubKeysCsv                  string `long:"subkeys-csv" description:"Subkeys for given base key which needs to be dumped (path to csv file)"`
@@ -112,7 +113,14 @@ func main() {
 		return
 	}
 
-	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpTokenSymbols || appOpts.DumpBalances || appOpts.DumpBalancesNft || appOpts.DumpBlockHashes || appOpts.DumpBlocks {
+	if appOpts.DumpStakingClaims {
+		if len(appOpts.subKeysSlice) == 0 {
+			panic("This argument requires addresses passed with --subkeys-csv or --subkeys keys")
+		}
+	}
+
+	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpTokenSymbols || appOpts.DumpBalances || appOpts.DumpBalancesNft ||
+		appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpStakingClaims {
 		dump()
 	}
 }

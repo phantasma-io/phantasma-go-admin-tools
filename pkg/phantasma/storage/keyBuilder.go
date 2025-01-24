@@ -13,21 +13,30 @@ func KeyBuilderNew() *KeyBuilder {
 	return &KeyBuilder{key: []byte{}}
 }
 
-func (k *KeyBuilder) AppendBytes(b []byte) {
+func (k *KeyBuilder) SetBytes(b []byte) *KeyBuilder {
+	k.key = b
+	return k
+}
+
+func (k *KeyBuilder) AppendBytes(b []byte) *KeyBuilder {
 	k.key = append(k.key, b...)
+	return k
 }
 
-func (k *KeyBuilder) AppendString(s string) {
+func (k *KeyBuilder) AppendString(s string) *KeyBuilder {
 	k.key = append(k.key, []byte(s)...)
+	return k
 }
 
-func (k *KeyBuilder) AppendAddress(address cryptography.Address) {
+func (k *KeyBuilder) AppendAddress(address cryptography.Address) *KeyBuilder {
 	k.key = append(k.key, address.Bytes()...)
+	return k
 }
 
-func (k *KeyBuilder) AppendAddressAsString(address string) {
+func (k *KeyBuilder) AppendAddressAsString(address string) *KeyBuilder {
 	a, _ := cryptography.FromString(address)
 	k.AppendAddress(a)
+	return k
 }
 
 func (k *KeyBuilder) Build() []byte {

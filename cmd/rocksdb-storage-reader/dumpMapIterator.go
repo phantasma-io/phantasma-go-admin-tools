@@ -27,7 +27,7 @@ func (it *DumpDataMapIterator) Uninit() {
 	it.output.Flush()
 }
 
-func (it *DumpDataMapIterator) Iterate(index *big.Int) bool {
+func (it *DumpDataMapIterator) Iterate(index *big.Int, displayKey string, keyPrefix []byte) bool {
 	if it.Connection == nil {
 		panic("Connection must be set")
 	}
@@ -39,14 +39,20 @@ func (it *DumpDataMapIterator) Iterate(index *big.Int) bool {
 		it.limitCounter++
 	}
 
-	key := storage.ElementKey([]byte(it.KeyPrefix), index)
+	var key []byte
+	if keyPrefix != nil {
+		// Using unique key prefix for every Iterate() call.
+		key = storage.ElementKey(keyPrefix, index)
+	} else {
+		// Using one prefix for all Iterate() calls.
+		key = storage.ElementKey([]byte(it.KeyPrefix), index)
+	}
 	value, err := it.Connection.Get(key)
 	if err != nil {
 		panic(err)
 	}
 
-	keyAlt := big.NewInt(0).Add(index, big.NewInt(1))
-	result, success := DumpRow(it.Connection, key, keyAlt.String(), value, it.SubKeys1, it.Addresses, false)
+	result, success := DumpRow(it.Connection, key, displayKey, value, it.SubKeys1, it.Addresses, false)
 	if success {
 		it.output.AddRecord(result)
 	}

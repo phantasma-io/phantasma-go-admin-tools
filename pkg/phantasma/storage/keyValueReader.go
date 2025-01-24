@@ -27,6 +27,21 @@ func (k *KeyValueReader) TrimPrefix(p []byte) {
 	k.keyOrValue = bytes.TrimPrefix(k.keyOrValue, []byte(p))
 }
 
+func (k *KeyValueReader) ReadBytes(hasLengthPrefix bool) []byte {
+	var b []byte
+
+	if hasLengthPrefix {
+		br := *io.NewBinReaderFromBuf(k.keyOrValue)
+		b = br.ReadVarBytes()
+		k.keyOrValue = k.keyOrValue[br.Count:]
+	} else {
+		b = k.keyOrValue
+		k.keyOrValue = nil
+	}
+
+	return b
+}
+
 func (k *KeyValueReader) ReadAddress(hasLengthPrefix bool) *cryptography.Address {
 	var prefixedAddress []byte
 	if hasLengthPrefix {

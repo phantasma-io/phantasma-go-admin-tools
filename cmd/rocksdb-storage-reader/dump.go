@@ -9,7 +9,7 @@ import (
 )
 
 func dump() {
-	if appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpTokenSymbols {
+	if appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpTokenSymbols || appOpts.DumpStakingClaims {
 		it := DumpDataMapIterator{Limit: appOpts.Limit}
 		it.Init(appOpts.DbPath, appOpts.ColumnFamily, appOpts.OutputFormat)
 
@@ -17,20 +17,44 @@ func dump() {
 			it.KeyPrefix = []byte(Height)
 		} else if appOpts.DumpTokenSymbols {
 			it.KeyPrefix = []byte(TokensList)
+		} else if appOpts.DumpStakingClaims {
+			it.KeyPrefix = []byte(".stake._claimMap.")
 		}
 
-		count, err := it.Connection.GetAsBigInt(storage.CountKey([]byte(it.KeyPrefix)))
-		if err != nil {
-			panic(err)
-		}
+		if appOpts.DumpStakingClaims {
+			if appOpts.Verbose {
+				fmt.Printf("Addresses count: %d\n", len(appOpts.subKeysSlice))
+			}
+			for _, address := range appOpts.subKeysSlice {
+				// Go through all addresses
 
-		if appOpts.Verbose {
-			fmt.Printf("Map size: %d\n", count)
-		}
+				keyPrefix := storage.KeyBuilderNew().SetBytes([]byte(it.KeyPrefix)).AppendString(address).Build()
 
-		var one = big.NewInt(1)
-		for i := big.NewInt(0); i.Cmp(count) < 0; i.Add(i, one) {
-			it.Iterate(i)
+				count, err := it.Connection.GetAsBigInt(storage.CountKey(keyPrefix))
+				if err != nil {
+					panic(err)
+				}
+
+				var one = big.NewInt(1)
+				for i := big.NewInt(0); i.Cmp(count) < 0; i.Add(i, one) {
+					it.Iterate(i, address, keyPrefix)
+				}
+			}
+		} else {
+			count, err := it.Connection.GetAsBigInt(storage.CountKey([]byte(it.KeyPrefix)))
+			if err != nil {
+				panic(err)
+			}
+
+			if appOpts.Verbose {
+				fmt.Printf("Map size: %d\n", count)
+			}
+
+			var one = big.NewInt(1)
+			for i := big.NewInt(0); i.Cmp(count) < 0; i.Add(i, one) {
+				displayKey := big.NewInt(0).Add(i, big.NewInt(1))
+				it.Iterate(i, displayKey.String(), nil)
+			}
 		}
 
 		it.Uninit()
