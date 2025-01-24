@@ -10,7 +10,7 @@ import (
 )
 
 func dump() {
-	if appOpts.DumpStakes || appOpts.DumpStakingLeftovers {
+	if appOpts.DumpStakes || appOpts.DumpStakingLeftovers || appOpts.DumpStakingMasterAge {
 		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
 		o := NewOutput(OutputFormatFromString(appOpts.OutputFormat))
 
@@ -19,6 +19,8 @@ func dump() {
 			keyPrefix = []byte(".stake._stakeMap")
 		} else if appOpts.DumpStakingLeftovers {
 			keyPrefix = []byte(".stake._leftoverMap")
+		} else if appOpts.DumpStakingMasterAge {
+			keyPrefix = []byte(".stake._masterAgeMap")
 		}
 
 		if appOpts.Verbose {

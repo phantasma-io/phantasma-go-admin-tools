@@ -43,6 +43,9 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 	} else if appOpts.DumpStakingLeftovers {
 		vr := storage.KeyValueReaderNew(value)
 		return storage.KeyValueJson{Key: keyAlt, Value: vr.ReadBigInt(true).String()}, true
+	} else if appOpts.DumpStakingMasterAge {
+		vr := storage.KeyValueReaderNew(value)
+		return storage.KeyValueJson{Key: keyAlt, Value: vr.ReadTimestamp()}, true
 	} else if appOpts.DumpBalances {
 		kr := storage.KeyValueReaderNew(key)
 		kr.TrimPrefix(Balances.Bytes())

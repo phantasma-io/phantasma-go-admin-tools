@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/phantasma-io/phantasma-go/pkg/cryptography"
+	"github.com/phantasma-io/phantasma-go/pkg/domain/types"
 	"github.com/phantasma-io/phantasma-go/pkg/io"
 	"github.com/phantasma-io/phantasma-go/pkg/util"
 )
@@ -103,4 +104,12 @@ func (k *KeyValueReader) ReadBigInt(hasLengthPrefix bool) *big.Int {
 	}
 
 	return n
+}
+
+func (k *KeyValueReader) ReadTimestamp() *types.Timestamp {
+	var t *types.Timestamp
+	br := *io.NewBinReaderFromBuf(k.keyOrValue)
+	t = br.ReadTimestamp()
+	k.keyOrValue = nil
+	return t
 }
