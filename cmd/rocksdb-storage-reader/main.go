@@ -24,6 +24,7 @@ var appOpts struct {
 	DumpStakingClaims           bool   `long:"dump-staking-claims" description:"Dump staking claims"`
 	DumpStakingLeftovers        bool   `long:"dump-staking-leftovers" description:"Dump staking KCAL leftovers (part of unclaimed)"`
 	DumpStakingMasterAge        bool   `long:"dump-staking-master-age" description:"Dump staking master age map"`
+	DumpStakingMasterClaims     bool   `long:"dump-staking-master-claims" description:"Dump staking master claims timestamps"`
 	DumpStakes                  bool   `long:"dump-stakes" description:"Dump stakes"`
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
 	SubKeys                     string `long:"subkeys" description:"Subkeys for given base key which needs to be dumped (coma-separated)"`
@@ -124,7 +125,7 @@ func main() {
 
 	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpTokenSymbols || appOpts.DumpBalances || appOpts.DumpBalancesNft ||
 		appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpStakingClaims || appOpts.DumpStakes ||
-		appOpts.DumpStakingLeftovers || appOpts.DumpStakingMasterAge {
+		appOpts.DumpStakingLeftovers || appOpts.DumpStakingMasterAge || appOpts.DumpStakingMasterClaims {
 		dump()
 	}
 }
