@@ -10,9 +10,16 @@ import (
 )
 
 func dump() {
-	if appOpts.DumpStakes {
+	if appOpts.DumpStakes || appOpts.DumpStakingLeftovers {
 		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
 		o := NewOutput(OutputFormatFromString(appOpts.OutputFormat))
+
+		var keyPrefix []byte
+		if appOpts.DumpStakes {
+			keyPrefix = []byte(".stake._stakeMap")
+		} else if appOpts.DumpStakingLeftovers {
+			keyPrefix = []byte(".stake._leftoverMap")
+		}
 
 		if appOpts.Verbose {
 			fmt.Printf("Addresses count: %d\n", len(appOpts.subKeysSlice))
@@ -20,13 +27,13 @@ func dump() {
 		for _, address := range appOpts.subKeysSlice {
 			// Go through all addresses
 
-			key := storage.KeyBuilderNew().SetBytes([]byte(".stake._stakeMap")).AppendAddressPrefixedAsString(address).Build()
+			key := storage.KeyBuilderNew().SetBytes(keyPrefix).AppendAddressPrefixedAsString(address).Build()
 
 			value, err := c.Get(key)
 			if err != nil {
 				panic(err)
 			}
-			if value == nil {
+			if value == nil || len(value) == 0 {
 				continue
 			}
 			result, success := DumpRow(c, key, address, value, nil, nil, false)

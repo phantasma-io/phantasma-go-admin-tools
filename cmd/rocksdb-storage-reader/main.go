@@ -22,6 +22,7 @@ var appOpts struct {
 	DumpBlockHashes             bool   `long:"dump-block-hashes" description:"Dump all block hashes"`
 	DumpBlocks                  bool   `long:"dump-blocks" description:"Dump all blocks"`
 	DumpStakingClaims           bool   `long:"dump-staking-claims" description:"Dump staking claims"`
+	DumpStakingLeftovers        bool   `long:"dump-staking-leftovers" description:"Dump staking KCAL leftovers (part of unclaimed)"`
 	DumpStakes                  bool   `long:"dump-stakes" description:"Dump stakes"`
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
 	SubKeys                     string `long:"subkeys" description:"Subkeys for given base key which needs to be dumped (coma-separated)"`
@@ -114,14 +115,14 @@ func main() {
 		return
 	}
 
-	if appOpts.DumpStakingClaims || appOpts.DumpStakes {
+	if appOpts.DumpStakingClaims || appOpts.DumpStakes || appOpts.DumpStakingLeftovers {
 		if len(appOpts.subKeysSlice) == 0 {
 			panic("This argument requires addresses passed with --subkeys-csv or --subkeys keys")
 		}
 	}
 
 	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpTokenSymbols || appOpts.DumpBalances || appOpts.DumpBalancesNft ||
-		appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpStakingClaims || appOpts.DumpStakes {
+		appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpStakingClaims || appOpts.DumpStakes || appOpts.DumpStakingLeftovers {
 		dump()
 	}
 }
