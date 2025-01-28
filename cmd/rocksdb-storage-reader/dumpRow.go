@@ -1,13 +1,19 @@
 package main
 
 import (
+	"bytes"
+	"compress/flate"
+	"encoding/base64"
 	"encoding/hex"
+	"io"
+	"math/big"
 	"slices"
+	"strings"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
 	"github.com/phantasma-io/phantasma-go/pkg/domain/stake"
-	"github.com/phantasma-io/phantasma-go/pkg/io"
+	phaio "github.com/phantasma-io/phantasma-go/pkg/io"
 )
 
 func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []byte, subkeys1 [][]byte, addresses []string, panicOnUnknownSubkey bool) (storage.Exportable, bool) {
@@ -35,10 +41,10 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 		vr := storage.KeyValueReaderNew(value)
 		return storage.KeyValue{Key: "Symbol", Value: vr.ReadString(true)}, true
 	} else if appOpts.DumpStakingClaims {
-		energyClaim := io.Deserialize[*stake.EnergyClaim](value)
+		energyClaim := phaio.Deserialize[*stake.EnergyClaim](value)
 		return storage.KeyValueJson{Key: keyAlt, Value: energyClaim}, true
 	} else if appOpts.DumpStakes {
-		energyStake := io.Deserialize[*stake.EnergyStake](value)
+		energyStake := phaio.Deserialize[*stake.EnergyStake](value)
 		return storage.KeyValueJson{Key: keyAlt, Value: energyStake}, true
 	} else if appOpts.DumpStakingLeftovers {
 		vr := storage.KeyValueReaderNew(value)
@@ -46,6 +52,49 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 	} else if appOpts.DumpStakingMasterAge || appOpts.DumpStakingMasterClaims {
 		vr := storage.KeyValueReaderNew(value)
 		return storage.KeyValueJson{Key: keyAlt, Value: vr.ReadTimestamp()}, true
+	} else if appOpts.DumpTransactions {
+		kr := storage.KeyValueReaderNew(key)
+		kr.TrimPrefix(Txs.Bytes())
+		txHash := kr.GetRemainder()
+
+		if len(txHash) < 33 { // It's some garbage in db
+			return storage.KeyValue{}, false
+		}
+
+		blockHash, err := connection.Get(append(TxBlockMap.Bytes(), txHash...))
+		if err != nil {
+			panic(err)
+		}
+
+		blockHash = blockHash[1:] // First byte is length
+		slices.Reverse(blockHash) // Hash is stored in reversed order.
+
+		// Looking for block height by its hash
+		ok, height := FindBlockNumberByHash(blockHash)
+		if !ok {
+			panic("Cannot get block height: " + height)
+		}
+
+		txHash = txHash[1:]    // First byte is length
+		slices.Reverse(txHash) // Hash is stored in reversed order.
+
+		vr := storage.KeyValueReaderNew(value)
+		tx := vr.GetRemainder()
+
+		if appOpts.Decompress {
+			flateReader := flate.NewReader(bytes.NewReader(tx))
+			txDecompressed, err := io.ReadAll(flateReader)
+			if err != nil {
+				panic(err)
+			}
+			tx = txDecompressed
+		}
+		return storage.Tx{
+			TxHash:       strings.ToUpper(hex.EncodeToString(txHash)), // ToUpper() to make things easier with current explorer
+			TxHashB64:    base64.StdEncoding.EncodeToString(txHash),
+			BlockHashB64: base64.StdEncoding.EncodeToString(blockHash),
+			BlockHeight:  height,
+			TxBytesB64:   base64.StdEncoding.EncodeToString(tx)}, true
 	} else if appOpts.DumpBalances {
 		kr := storage.KeyValueReaderNew(key)
 		kr.TrimPrefix(Balances.Bytes())
@@ -101,13 +150,35 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 		if appOpts.DumpBlockHashes {
 			value = value[1:]     // First byte is length
 			slices.Reverse(value) // Hash is stored in reversed order.
-			return storage.KeyValue{Key: keyAlt, Value: hex.EncodeToString(value)}, true
+			return storage.BlockHeightAndHash{
+				Height:  keyAlt,
+				Hash:    strings.ToUpper(hex.EncodeToString(value)), // ToUpper() to make things easier with current explorer
+				HashB64: base64.StdEncoding.EncodeToString(value)}, true
 		} else if appOpts.DumpBlocks {
 			block, err := connection.Get(append(Blocks.Bytes(), value...))
 			if err != nil {
 				panic(err)
 			}
-			return storage.KeyValue{Key: keyAlt, Value: hex.EncodeToString(block)}, true
+
+			if appOpts.Decompress {
+				flateReader := flate.NewReader(bytes.NewReader(block))
+				blockDecompressed, err := io.ReadAll(flateReader)
+				if err != nil {
+					panic(err)
+				}
+				block = blockDecompressed
+			}
+
+			a := big.NewInt(0)
+			a.SetString(keyAlt, 10)
+			ok, blockHash := FindBlockHashByNumber(a)
+			if !ok {
+				panic("cannot find block hash for height " + keyAlt)
+			}
+
+			return storage.Block{Height: keyAlt,
+				Hash:  base64.StdEncoding.EncodeToString(blockHash),
+				Bytes: base64.StdEncoding.EncodeToString(block)}, true
 		}
 	}
 

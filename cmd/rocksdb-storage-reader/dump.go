@@ -109,6 +109,8 @@ func dump() {
 			v.KeyPrefix = []byte(Ids)
 		} else if appOpts.BaseKey != "" {
 			v.KeyPrefix = []byte(appOpts.BaseKey)
+		} else if appOpts.DumpTransactions {
+			v.KeyPrefix = []byte(Txs)
 		}
 
 		if len(appOpts.subKeysSlice) > 0 {

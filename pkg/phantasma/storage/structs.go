@@ -116,3 +116,44 @@ type BalanceNonFungible struct {
 func (b BalanceNonFungible) String() string {
 	return "TokenSymbol: " + b.TokenSymbol + " Address: " + b.Address + " Ids: " + strings.Join(b.Ids, " ")
 }
+
+type Tx struct {
+	TxHash       string
+	TxHashB64    string
+	BlockHashB64 string
+	BlockHeight  string
+	TxBytesB64   string
+}
+
+func (t Tx) String() string {
+	return "TxHash: " + t.TxHash + " BlockHash: " + t.BlockHashB64 + " BlockHeight: " + t.BlockHeight + " TxBytes: " + t.TxBytesB64
+}
+func (t Tx) ToSlice() []string {
+	panic("not supported")
+}
+
+type BlockHeightAndHash struct {
+	Height  string
+	Hash    string
+	HashB64 string
+}
+
+func (b BlockHeightAndHash) String() string {
+	return "Height: " + b.Height + " Hash: " + b.Hash + " HashB64: " + b.HashB64
+}
+func (b BlockHeightAndHash) ToSlice() []string {
+	panic("not supported")
+}
+
+type Block struct {
+	Height string
+	Hash   string
+	Bytes  string
+}
+
+func (b Block) String() string {
+	return "Height: " + b.Height + " Hash: " + b.Hash + " Bytes: " + b.Bytes
+}
+func (b Block) ToSlice() []string {
+	panic("not supported")
+}

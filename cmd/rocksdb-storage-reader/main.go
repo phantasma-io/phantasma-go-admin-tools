@@ -2,13 +2,20 @@ package main
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
 	"github.com/jessevdk/go-flags"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
 )
+
+type BlockHeight struct {
+	Height  string
+	HashB64 []byte
+}
 
 var appOpts struct {
 	DbPath                      string `short:"p" long:"db-path" description:"Path to Rocksdb database directory" required:"true"`
@@ -21,15 +28,18 @@ var appOpts struct {
 	DumpBalancesNft             bool   `long:"dump-balances-nft" description:"Dump balances of all non-fungible tokens for all addresses"`
 	DumpBlockHashes             bool   `long:"dump-block-hashes" description:"Dump all block hashes"`
 	DumpBlocks                  bool   `long:"dump-blocks" description:"Dump all blocks"`
+	DumpTransactions            bool   `long:"dump-txes" description:"Dump all transactions"`
 	DumpStakingClaims           bool   `long:"dump-staking-claims" description:"Dump staking claims"`
 	DumpStakingLeftovers        bool   `long:"dump-staking-leftovers" description:"Dump staking KCAL leftovers (part of unclaimed)"`
 	DumpStakingMasterAge        bool   `long:"dump-staking-master-age" description:"Dump staking master age map"`
 	DumpStakingMasterClaims     bool   `long:"dump-staking-master-claims" description:"Dump staking master claims timestamps"`
 	DumpStakes                  bool   `long:"dump-stakes" description:"Dump stakes"`
+	Decompress                  bool   `long:"decompress" description:"Decompress blocks and txes, works with --dump-blocks and --dump-txes. False by default"`
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
 	SubKeys                     string `long:"subkeys" description:"Subkeys for given base key which needs to be dumped (coma-separated)"`
 	SubKeysCsv                  string `long:"subkeys-csv" description:"Subkeys for given base key which needs to be dumped (path to csv file)"`
 	Addresses                   string `long:"addresses" description:"Addresses for filtering out results"`
+	BlockHeightsJson            string `long:"block-heigts-json" description:"JSON with block heights and hashes, result of --dump-block-hashes"`
 	PanicOnUnknownSubkey        bool   `long:"panic-on-unknown-subkey" description:"Crash if unknown subkey was detected"`
 	ListKeysWithUnknownBaseKeys bool   `long:"list-keys-with-unknown-base-keys" description:"Show keys with unknown base keys"`
 	ListKeysWithUnknownSubKeys  bool   `long:"list-keys-with-unknown-sub-keys" description:"Show keys with unknown sub keys. base-key argument is mandatory if this flag is passed"`
@@ -41,7 +51,9 @@ var appOpts struct {
 	Limit                       uint   `long:"limit" description:"Limit processing with given amount of rows"`
 	Verbose                     bool   `short:"v" long:"verbose" description:"Verbose mode"`
 
-	subKeysSlice []string
+	subKeysSlice     []string
+	blockHeightsMap  map[string]int
+	blockHeightsMap2 map[int]string
 }
 
 func main() {
@@ -123,8 +135,41 @@ func main() {
 		}
 	}
 
+	if appOpts.DumpTransactions || appOpts.DumpBlocks {
+		if len(appOpts.BlockHeightsJson) == 0 {
+			panic("This argument requires block height JSON file path to be provided with --block-heigts-json")
+		}
+
+		f, err := os.Open(appOpts.BlockHeightsJson)
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer f.Close()
+
+		b, _ := io.ReadAll(f)
+		var parsed []BlockHeight
+		json.Unmarshal(b, &parsed)
+
+		if appOpts.DumpTransactions {
+			appOpts.blockHeightsMap = make(map[string]int)
+			for i, p := range parsed {
+				appOpts.blockHeightsMap[string(p.HashB64)] = i
+			}
+		} else if appOpts.DumpBlocks {
+			appOpts.blockHeightsMap2 = make(map[int]string)
+			for i, p := range parsed {
+				appOpts.blockHeightsMap2[i] = string(p.HashB64)
+			}
+		}
+
+		if appOpts.Verbose {
+			fmt.Printf("Loaded %d block heigts and hashes", len(appOpts.blockHeightsMap))
+		}
+	}
+
 	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpTokenSymbols || appOpts.DumpBalances || appOpts.DumpBalancesNft ||
-		appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpStakingClaims || appOpts.DumpStakes ||
+		appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpTransactions ||
+		appOpts.DumpStakingClaims || appOpts.DumpStakes ||
 		appOpts.DumpStakingLeftovers || appOpts.DumpStakingMasterAge || appOpts.DumpStakingMasterClaims {
 		dump()
 	}
