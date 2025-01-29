@@ -51,6 +51,8 @@ func dump() {
 					panic(err)
 				}
 				seriesContent := phaio.Deserialize[*contract.TokenSeries](seriesContentBytes)
+				seriesContent.Symbol = b.TokenSymbol
+				seriesContent.SeriesID = tokenContent.SeriesID
 
 				o.AddJsonRecord(seriesContent)
 			}
