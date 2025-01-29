@@ -1,10 +1,7 @@
 package main
 
 import (
-	"bytes"
-	"compress/flate"
 	"fmt"
-	"io"
 	"math/big"
 	"strings"
 
@@ -56,37 +53,6 @@ func dump() {
 				seriesContent := phaio.Deserialize[*contract.TokenSeries](seriesContentBytes)
 
 				o.AddJsonRecord(seriesContent)
-			}
-		}
-
-		c.Destroy()
-		o.Flush()
-	} else if appOpts.DumpNfts {
-		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
-		o := NewOutput(OutputFormatFromString(appOpts.OutputFormat))
-
-		for _, b := range appOpts.nftBalances {
-			for _, id := range b.Ids {
-				key := []byte(b.TokenSymbol + "." + id)
-				tokenContentBytes, err := c.Get(key)
-				if err != nil {
-					panic(err)
-				}
-
-				flateReader := flate.NewReader(bytes.NewReader(tokenContentBytes))
-				bytesDecompressed, err := io.ReadAll(flateReader)
-				if err != nil {
-					panic(err)
-				}
-				tokenContentBytes = bytesDecompressed
-
-				tokenContent := phaio.Deserialize[*contract.TokenContent](tokenContentBytes)
-				tokenContent.Symbol = b.TokenSymbol
-				tId := big.NewInt(0)
-				tId.SetString(id, 10)
-				tokenContent.TokenID = tId
-
-				o.AddJsonRecord(tokenContent)
 			}
 		}
 
