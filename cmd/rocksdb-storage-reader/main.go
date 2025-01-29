@@ -36,6 +36,7 @@ var appOpts struct {
 	DumpStakingMasterClaims     bool   `long:"dump-staking-master-claims" description:"Dump staking master claims timestamps"`
 	DumpStakes                  bool   `long:"dump-stakes" description:"Dump stakes"`
 	DumpNfts                    bool   `long:"dump-nfts" description:"Dump nfts"`
+	DumpSeries                  bool   `long:"dump-series" description:"Dump nft series"`
 	Decompress                  bool   `long:"decompress" description:"Decompress blocks and txes, works with --dump-blocks and --dump-txes. False by default"`
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
 	SubKeys                     string `long:"subkeys" description:"Subkeys for given base key which needs to be dumped (coma-separated)"`
@@ -171,7 +172,7 @@ func main() {
 		}
 	}
 
-	if appOpts.DumpNfts {
+	if appOpts.DumpNfts || appOpts.DumpSeries {
 		if len(appOpts.NftBalancesJson) == 0 {
 			panic("This argument requires nft balances JSON file path to be provided with --nft-balances-json")
 		}
@@ -190,7 +191,7 @@ func main() {
 		appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpTransactions ||
 		appOpts.DumpStakingClaims || appOpts.DumpStakes ||
 		appOpts.DumpStakingLeftovers || appOpts.DumpStakingMasterAge || appOpts.DumpStakingMasterClaims ||
-		appOpts.DumpNfts {
+		appOpts.DumpNfts || appOpts.DumpSeries {
 		dump()
 	}
 }

@@ -44,3 +44,6 @@ json_format $OUT/fungible_balances.json
 # NFTs data
 ./rocksdb-storage-reader -p $STORAGE -d -f=chain.main --dump-nfts --nft-balances-json=$OUT/nft_balances.json --output-format=json --output=$OUT/nft_datas.json
 json_format $OUT/nft_datas.json
+
+./rocksdb-storage-reader -p $STORAGE -d -f=chain.main --dump-series --nft-balances-json=$OUT/nft_balances.json --output-format=json --output=$OUT/nft_series.json
+json_format $OUT/nft_series.json

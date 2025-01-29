@@ -21,6 +21,52 @@ func dump() {
 
 		for _, b := range appOpts.nftBalances {
 			for _, id := range b.Ids {
+				tokenContentBytes, err := c.Get(GetNftTokenKey(b.TokenSymbol, id))
+				if err != nil {
+					panic(err)
+				}
+
+				tokenContent := phaio.Deserialize[*contract.TokenContent](Decompress(tokenContentBytes))
+				tokenContent.Symbol = b.TokenSymbol
+				tokenContent.TokenID = BigIntFromString(id)
+
+				o.AddJsonRecord(tokenContent)
+			}
+		}
+
+		c.Destroy()
+		o.Flush()
+	} else if appOpts.DumpSeries {
+		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
+		o := NewOutput(OutputFormatFromString(appOpts.OutputFormat))
+
+		for _, b := range appOpts.nftBalances {
+			for _, id := range b.Ids {
+				tokenContentBytes, err := c.Get(GetNftTokenKey(b.TokenSymbol, id))
+				if err != nil {
+					panic(err)
+				}
+
+				tokenContent := phaio.Deserialize[*contract.TokenContent](Decompress(tokenContentBytes))
+
+				seriesContentBytes, err := c.Get(GetTokenSeriesKey(b.TokenSymbol, tokenContent.SeriesID))
+				if err != nil {
+					panic(err)
+				}
+				seriesContent := phaio.Deserialize[*contract.TokenSeries](seriesContentBytes)
+
+				o.AddJsonRecord(seriesContent)
+			}
+		}
+
+		c.Destroy()
+		o.Flush()
+	} else if appOpts.DumpNfts {
+		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
+		o := NewOutput(OutputFormatFromString(appOpts.OutputFormat))
+
+		for _, b := range appOpts.nftBalances {
+			for _, id := range b.Ids {
 				key := []byte(b.TokenSymbol + "." + id)
 				tokenContentBytes, err := c.Get(key)
 				if err != nil {
