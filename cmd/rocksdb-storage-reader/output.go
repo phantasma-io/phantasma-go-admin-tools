@@ -97,6 +97,10 @@ func (o *Output) AddRecord(r storage.Exportable) {
 	}
 }
 
+func (o *Output) AddJsonRecord(r any) {
+	o.AnyRecords = append(o.AnyRecords, r)
+}
+
 func (o *Output) Flush() {
 	if o.format == CSV {
 		o.csv.WriteAll(o.csvRecords)

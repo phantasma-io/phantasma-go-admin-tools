@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/jessevdk/go-flags"
+	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
 )
 
@@ -34,12 +35,14 @@ var appOpts struct {
 	DumpStakingMasterAge        bool   `long:"dump-staking-master-age" description:"Dump staking master age map"`
 	DumpStakingMasterClaims     bool   `long:"dump-staking-master-claims" description:"Dump staking master claims timestamps"`
 	DumpStakes                  bool   `long:"dump-stakes" description:"Dump stakes"`
+	DumpNfts                    bool   `long:"dump-nfts" description:"Dump nfts"`
 	Decompress                  bool   `long:"decompress" description:"Decompress blocks and txes, works with --dump-blocks and --dump-txes. False by default"`
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
 	SubKeys                     string `long:"subkeys" description:"Subkeys for given base key which needs to be dumped (coma-separated)"`
 	SubKeysCsv                  string `long:"subkeys-csv" description:"Subkeys for given base key which needs to be dumped (path to csv file)"`
 	Addresses                   string `long:"addresses" description:"Addresses for filtering out results"`
 	BlockHeightsJson            string `long:"block-heigts-json" description:"JSON with block heights and hashes, result of --dump-block-hashes"`
+	NftBalancesJson             string `long:"nft-balances-json" description:"JSON with nft balances, result of --dump-balances-nft"`
 	PanicOnUnknownSubkey        bool   `long:"panic-on-unknown-subkey" description:"Crash if unknown subkey was detected"`
 	ListKeysWithUnknownBaseKeys bool   `long:"list-keys-with-unknown-base-keys" description:"Show keys with unknown base keys"`
 	ListKeysWithUnknownSubKeys  bool   `long:"list-keys-with-unknown-sub-keys" description:"Show keys with unknown sub keys. base-key argument is mandatory if this flag is passed"`
@@ -54,6 +57,7 @@ var appOpts struct {
 	subKeysSlice     []string
 	blockHeightsMap  map[string]int
 	blockHeightsMap2 map[int]string
+	nftBalances      []storage.BalanceNonFungible
 }
 
 func main() {
@@ -167,10 +171,26 @@ func main() {
 		}
 	}
 
+	if appOpts.DumpNfts {
+		if len(appOpts.NftBalancesJson) == 0 {
+			panic("This argument requires nft balances JSON file path to be provided with --nft-balances-json")
+		}
+
+		f, err := os.Open(appOpts.NftBalancesJson)
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer f.Close()
+
+		b, _ := io.ReadAll(f)
+		json.Unmarshal(b, &appOpts.nftBalances)
+	}
+
 	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpTokenSymbols || appOpts.DumpBalances || appOpts.DumpBalancesNft ||
 		appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpTransactions ||
 		appOpts.DumpStakingClaims || appOpts.DumpStakes ||
-		appOpts.DumpStakingLeftovers || appOpts.DumpStakingMasterAge || appOpts.DumpStakingMasterClaims {
+		appOpts.DumpStakingLeftovers || appOpts.DumpStakingMasterAge || appOpts.DumpStakingMasterClaims ||
+		appOpts.DumpNfts {
 		dump()
 	}
 }

@@ -1,16 +1,52 @@
 package main
 
 import (
+	"bytes"
+	"compress/flate"
 	"fmt"
+	"io"
 	"math/big"
 	"strings"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
+	"github.com/phantasma-io/phantasma-go/pkg/domain/contract"
+	phaio "github.com/phantasma-io/phantasma-go/pkg/io"
 )
 
 func dump() {
-	if appOpts.DumpStakes || appOpts.DumpStakingLeftovers || appOpts.DumpStakingMasterAge || appOpts.DumpStakingMasterClaims {
+	if appOpts.DumpNfts {
+		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
+		o := NewOutput(OutputFormatFromString(appOpts.OutputFormat))
+
+		for _, b := range appOpts.nftBalances {
+			for _, id := range b.Ids {
+				key := []byte(b.TokenSymbol + "." + id)
+				tokenContentBytes, err := c.Get(key)
+				if err != nil {
+					panic(err)
+				}
+
+				flateReader := flate.NewReader(bytes.NewReader(tokenContentBytes))
+				bytesDecompressed, err := io.ReadAll(flateReader)
+				if err != nil {
+					panic(err)
+				}
+				tokenContentBytes = bytesDecompressed
+
+				tokenContent := phaio.Deserialize[*contract.TokenContent](tokenContentBytes)
+				tokenContent.Symbol = b.TokenSymbol
+				tId := big.NewInt(0)
+				tId.SetString(id, 10)
+				tokenContent.TokenID = tId
+
+				o.AddJsonRecord(tokenContent)
+			}
+		}
+
+		c.Destroy()
+		o.Flush()
+	} else if appOpts.DumpStakes || appOpts.DumpStakingLeftovers || appOpts.DumpStakingMasterAge || appOpts.DumpStakingMasterClaims {
 		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
 		o := NewOutput(OutputFormatFromString(appOpts.OutputFormat))
 
