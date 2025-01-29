@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/big"
+	"slices"
 	"strings"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
@@ -37,6 +38,8 @@ func dump() {
 		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
 		o := NewOutput(OutputFormatFromString(appOpts.OutputFormat))
 
+		var alreadyExported []string
+
 		for _, b := range appOpts.nftBalances {
 			for _, id := range b.Ids {
 				tokenContentBytes, err := c.Get(GetNftTokenKey(b.TokenSymbol, id))
@@ -45,6 +48,10 @@ func dump() {
 				}
 
 				tokenContent := phaio.Deserialize[*contract.TokenContent](Decompress(tokenContentBytes))
+
+				if slices.Contains(alreadyExported, b.TokenSymbol+tokenContent.SeriesID.String()) {
+					continue
+				}
 
 				seriesContentBytes, err := c.Get(GetTokenSeriesKey(b.TokenSymbol, tokenContent.SeriesID))
 				if err != nil {
@@ -55,6 +62,8 @@ func dump() {
 				seriesContent.SeriesID = tokenContent.SeriesID
 
 				o.AddJsonRecord(seriesContent)
+
+				alreadyExported = append(alreadyExported, b.TokenSymbol+tokenContent.SeriesID.String())
 			}
 		}
 
