@@ -2,7 +2,6 @@ package storage
 
 import (
 	"encoding/json"
-	"math/big"
 	"strings"
 )
 
@@ -56,15 +55,15 @@ func (a Address) ToSlice() []string {
 type BalanceFungible struct {
 	TokenSymbol string
 	Address     string
-	Amount      *big.Int
+	Amount      string
 }
 
 func (b BalanceFungible) String() string {
-	return "TokenSymbol: " + b.TokenSymbol + " Address: " + b.Address + " Amount: " + b.Amount.String()
+	return "TokenSymbol: " + b.TokenSymbol + " Address: " + b.Address + " Amount: " + b.Amount
 }
 
 func (b BalanceFungible) ToSlice() []string {
-	return []string{b.TokenSymbol, b.Address, b.Amount.String()}
+	return []string{b.TokenSymbol, b.Address, b.Amount}
 }
 
 type BalanceNonFungibleSingleRow struct {

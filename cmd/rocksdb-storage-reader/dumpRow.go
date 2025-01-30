@@ -41,10 +41,10 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 		vr := storage.KeyValueReaderNew(value)
 		return storage.KeyValue{Key: "Symbol", Value: vr.ReadString(true)}, true
 	} else if appOpts.DumpStakingClaims {
-		energyClaim := phaio.Deserialize[*stake.EnergyClaim](value)
+		energyClaim := phaio.Deserialize[*stake.EnergyClaim_S](value)
 		return storage.KeyValueJson{Key: keyAlt, Value: energyClaim}, true
 	} else if appOpts.DumpStakes {
-		energyStake := phaio.Deserialize[*stake.EnergyStake](value)
+		energyStake := phaio.Deserialize[*stake.EnergyStake_S](value)
 		return storage.KeyValueJson{Key: keyAlt, Value: energyStake}, true
 	} else if appOpts.DumpStakingLeftovers {
 		vr := storage.KeyValueReaderNew(value)
@@ -113,7 +113,7 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 		}
 
 		vr := storage.KeyValueReaderNew(value)
-		amount := vr.ReadBigInt(false)
+		amount := vr.ReadBigInt(false).String()
 
 		return storage.BalanceFungible{TokenSymbol: string(tokenSymbol),
 			Address: address.String(),

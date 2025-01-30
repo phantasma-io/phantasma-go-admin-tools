@@ -64,7 +64,7 @@ func main() {
 			a, accounts = GetOrAddAccount(accounts, storageBalance.Address)
 			b := a.GetTokenBalance(chainTokens[storageBalance.TokenSymbol])
 			b.Chain = "main"
-			b.Amount = storageBalance.Amount.String()
+			b.Amount = storageBalance.Amount
 		}
 
 		body, err := json.MarshalIndent(accounts, " ", "  ")

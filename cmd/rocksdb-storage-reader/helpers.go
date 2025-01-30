@@ -43,6 +43,6 @@ func GetNftTokenKey(symbol, tokenId string) []byte {
 	return []byte(symbol + "." + tokenId)
 }
 
-func GetTokenSeriesKey(symbol string, seriesID *big.Int) []byte {
-	return []byte(symbol + ".serie" + seriesID.String())
+func GetTokenSeriesKey(symbol string, seriesID string) []byte {
+	return []byte(symbol + ".serie" + seriesID)
 }

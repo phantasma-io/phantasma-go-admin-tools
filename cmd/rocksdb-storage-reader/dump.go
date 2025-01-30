@@ -24,9 +24,9 @@ func dump() {
 					panic(err)
 				}
 
-				tokenContent := phaio.Deserialize[*contract.TokenContent](Decompress(tokenContentBytes))
+				tokenContent := phaio.Deserialize[*contract.TokenContent_S](Decompress(tokenContentBytes))
 				tokenContent.Symbol = b.TokenSymbol
-				tokenContent.TokenID = BigIntFromString(id)
+				tokenContent.TokenID = id
 
 				o.AddJsonRecord(tokenContent)
 			}
@@ -47,9 +47,9 @@ func dump() {
 					panic(err)
 				}
 
-				tokenContent := phaio.Deserialize[*contract.TokenContent](Decompress(tokenContentBytes))
+				tokenContent := phaio.Deserialize[*contract.TokenContent_S](Decompress(tokenContentBytes))
 
-				if slices.Contains(alreadyExported, b.TokenSymbol+tokenContent.SeriesID.String()) {
+				if slices.Contains(alreadyExported, b.TokenSymbol+tokenContent.SeriesID) {
 					continue
 				}
 
@@ -57,13 +57,13 @@ func dump() {
 				if err != nil {
 					panic(err)
 				}
-				seriesContent := phaio.Deserialize[*contract.TokenSeries](seriesContentBytes)
+				seriesContent := phaio.Deserialize[*contract.TokenSeries_S](seriesContentBytes)
 				seriesContent.Symbol = b.TokenSymbol
 				seriesContent.SeriesID = tokenContent.SeriesID
 
 				o.AddJsonRecord(seriesContent)
 
-				alreadyExported = append(alreadyExported, b.TokenSymbol+tokenContent.SeriesID.String())
+				alreadyExported = append(alreadyExported, b.TokenSymbol+tokenContent.SeriesID)
 			}
 		}
 
