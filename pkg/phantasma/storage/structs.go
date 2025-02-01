@@ -145,9 +145,10 @@ func (b BlockHeightAndHash) ToSlice() []string {
 }
 
 type Block struct {
-	Height string
-	Hash   string
-	Bytes  string
+	Height    string
+	Hash      string
+	Timestamp uint32
+	Bytes     string
 }
 
 func (b Block) String() string {

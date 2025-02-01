@@ -160,12 +160,20 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 				panic(err)
 			}
 
+			flateReader := flate.NewReader(bytes.NewReader(block))
+			blockDecompressed, err := io.ReadAll(flateReader)
+			if err != nil {
+				panic(err)
+			}
+
+			blockReader := storage.KeyValueReaderNew(blockDecompressed)
+			blockReader.ReadBigInt(true)
+
+			br := *phaio.NewBinReaderFromBuf(blockDecompressed)
+			br.ReadVarBytes()
+			timestamp := br.ReadTimestamp().Value
+
 			if appOpts.Decompress {
-				flateReader := flate.NewReader(bytes.NewReader(block))
-				blockDecompressed, err := io.ReadAll(flateReader)
-				if err != nil {
-					panic(err)
-				}
 				block = blockDecompressed
 			}
 
@@ -177,8 +185,9 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 			}
 
 			return storage.Block{Height: keyAlt,
-				Hash:  base64.StdEncoding.EncodeToString(blockHash),
-				Bytes: base64.StdEncoding.EncodeToString(block)}, true
+				Hash:      base64.StdEncoding.EncodeToString(blockHash),
+				Timestamp: timestamp,
+				Bytes:     base64.StdEncoding.EncodeToString(block)}, true
 		}
 	}
 
