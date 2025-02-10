@@ -37,13 +37,16 @@ var appOpts struct {
 	DumpStakes                  bool   `long:"dump-stakes" description:"Dump stakes"`
 	DumpNfts                    bool   `long:"dump-nfts" description:"Dump nfts"`
 	DumpSeries                  bool   `long:"dump-series" description:"Dump nft series"`
+	MergeKcalLeftovers          bool   `long:"merge-kcal-leftovers" description:"Merge KCAL leftovers to balances"`
 	Decompress                  bool   `long:"decompress" description:"Decompress blocks and txes, works with --dump-blocks and --dump-txes. False by default"`
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
 	SubKeys                     string `long:"subkeys" description:"Subkeys for given base key which needs to be dumped (coma-separated)"`
 	SubKeysCsv                  string `long:"subkeys-csv" description:"Subkeys for given base key which needs to be dumped (path to csv file)"`
 	Addresses                   string `long:"addresses" description:"Addresses for filtering out results"`
 	BlockHeightsJson            string `long:"block-heigts-json" description:"JSON with block heights and hashes, result of --dump-block-hashes"`
+	FungibleBalancesJson        string `long:"fungible-balances-json" description:"JSON with fungible balances, result of --dump-balances"`
 	NftBalancesJson             string `long:"nft-balances-json" description:"JSON with nft balances, result of --dump-balances-nft"`
+	KcalLeftoversJson           string `long:"kcal-leftovers-json" description:"JSON with KCAL leftovers, result of --dump-staking-leftovers"`
 	PanicOnUnknownSubkey        bool   `long:"panic-on-unknown-subkey" description:"Crash if unknown subkey was detected"`
 	ListKeysWithUnknownBaseKeys bool   `long:"list-keys-with-unknown-base-keys" description:"Show keys with unknown base keys"`
 	ListKeysWithUnknownSubKeys  bool   `long:"list-keys-with-unknown-sub-keys" description:"Show keys with unknown sub keys. base-key argument is mandatory if this flag is passed"`
@@ -58,7 +61,9 @@ var appOpts struct {
 	subKeysSlice     []string
 	blockHeightsMap  map[string]int
 	blockHeightsMap2 map[int]string
+	fungibleBalances []storage.BalanceFungible
 	nftBalances      []storage.BalanceNonFungible
+	kcalLeftovers    []storage.KeyValue
 }
 
 func main() {
@@ -186,6 +191,37 @@ func main() {
 		b, _ := io.ReadAll(f)
 		json.Unmarshal(b, &appOpts.nftBalances)
 	}
+	if appOpts.MergeKcalLeftovers {
+		{
+			if len(appOpts.FungibleBalancesJson) == 0 {
+				panic("This argument requires fungible balances JSON file path to be provided with --fungible-balances-json")
+			}
+
+			f, err := os.Open(appOpts.FungibleBalancesJson)
+			if err != nil {
+				fmt.Println(err)
+			}
+			defer f.Close()
+
+			b, _ := io.ReadAll(f)
+			json.Unmarshal(b, &appOpts.fungibleBalances)
+		}
+
+		{
+			if len(appOpts.KcalLeftoversJson) == 0 {
+				panic("This argument requires KCAL leftovers JSON file path to be provided with --dump-staking-leftovers")
+			}
+
+			f, err := os.Open(appOpts.KcalLeftoversJson)
+			if err != nil {
+				fmt.Println(err)
+			}
+			defer f.Close()
+
+			b, _ := io.ReadAll(f)
+			json.Unmarshal(b, &appOpts.kcalLeftovers)
+		}
+	}
 
 	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpTokenSymbols || appOpts.DumpBalances || appOpts.DumpBalancesNft ||
 		appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpTransactions ||
@@ -193,5 +229,9 @@ func main() {
 		appOpts.DumpStakingLeftovers || appOpts.DumpStakingMasterAge || appOpts.DumpStakingMasterClaims ||
 		appOpts.DumpNfts || appOpts.DumpSeries {
 		dump()
+	}
+
+	if appOpts.MergeKcalLeftovers {
+		AddKcalLeftovers()
 	}
 }
