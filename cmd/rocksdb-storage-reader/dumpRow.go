@@ -8,6 +8,7 @@ import (
 	"io"
 	"math/big"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
@@ -89,12 +90,14 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 			}
 			tx = txDecompressed
 		}
+		heightInt, _ := strconv.ParseInt(height, 10, 64)
 		return storage.Tx{
-			TxHash:       strings.ToUpper(hex.EncodeToString(txHash)), // ToUpper() to make things easier with current explorer
-			TxHashB64:    base64.StdEncoding.EncodeToString(txHash),
-			BlockHashB64: base64.StdEncoding.EncodeToString(blockHash),
-			BlockHeight:  height,
-			TxBytesB64:   base64.StdEncoding.EncodeToString(tx)}, true
+			TxHash:          strings.ToUpper(hex.EncodeToString(txHash)), // ToUpper() to make things easier with current explorer
+			TxHashB64:       base64.StdEncoding.EncodeToString(txHash),
+			BlockHashB64:    base64.StdEncoding.EncodeToString(blockHash),
+			BlockHeight:     height,
+			BlockHeightUint: uint64(heightInt),
+			TxBytesB64:      base64.StdEncoding.EncodeToString(tx)}, true
 	} else if appOpts.DumpBalances {
 		kr := storage.KeyValueReaderNew(key)
 		kr.TrimPrefix(Balances.Bytes())

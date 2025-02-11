@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
@@ -191,6 +192,15 @@ func dump() {
 
 		if string(v.KeyPrefix) == Ids.String() {
 			v.output.AnyRecords = storage.ConvertBalanceNonFungibleFromSingleRows(v.output.AnyRecords)
+		}
+
+		if appOpts.DumpTransactions {
+			sort.Slice(v.output.AnyRecords, func(i, j int) bool {
+				if v.output.AnyRecords[i].(storage.Tx).BlockHeightUint == v.output.AnyRecords[j].(storage.Tx).BlockHeightUint {
+					fmt.Println("Block with 2 or more txes: " + v.output.AnyRecords[i].(storage.Tx).BlockHeight)
+				}
+				return v.output.AnyRecords[i].(storage.Tx).BlockHeightUint < v.output.AnyRecords[j].(storage.Tx).BlockHeightUint
+			})
 		}
 
 		v.Uninit()

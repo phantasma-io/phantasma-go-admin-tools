@@ -117,11 +117,12 @@ func (b BalanceNonFungible) String() string {
 }
 
 type Tx struct {
-	TxHash       string
-	TxHashB64    string
-	BlockHashB64 string
-	BlockHeight  string
-	TxBytesB64   string
+	TxHash          string
+	TxHashB64       string
+	BlockHashB64    string
+	BlockHeight     string
+	BlockHeightUint uint64
+	TxBytesB64      string
 }
 
 func (t Tx) String() string {
