@@ -6,6 +6,11 @@ json_format () {
   mv $1_f $1
 }
 
+json_del_key () {
+  jq 'del(..|.'$1'?)' $2 > $2_d
+  mv $2_d $2
+}
+
 sh build-rocksdb-storage-reader.sh
 
 mkdir -p output
@@ -50,3 +55,14 @@ json_format $OUT/nft_series.json
 
 ./rocksdb-storage-reader -p $STORAGE -f=chain.main --dump-token-info --subkeys-csv=$OUT/tokens_list.csv --output-format=json --output=$OUT/token_infos.json
 json_format $OUT/token_infos.json
+
+curl -X 'GET' 'https://pharpc2.phantasma.info/api/v1/GetTokens?extended=false' -H 'accept: application/json' > $OUT/token_addresses_and_supplies.json
+json_format $OUT/token_addresses_and_supplies.json
+json_del_key name $OUT/token_addresses_and_supplies.json
+json_del_key decimals $OUT/token_addresses_and_supplies.json
+json_del_key maxSupply $OUT/token_addresses_and_supplies.json
+json_del_key flags $OUT/token_addresses_and_supplies.json
+json_del_key script $OUT/token_addresses_and_supplies.json
+json_del_key series $OUT/token_addresses_and_supplies.json
+json_del_key external $OUT/token_addresses_and_supplies.json
+json_del_key price $OUT/token_addresses_and_supplies.json
