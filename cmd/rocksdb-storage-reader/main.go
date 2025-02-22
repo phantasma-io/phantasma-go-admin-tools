@@ -25,6 +25,7 @@ var appOpts struct {
 	DumpData                    bool   `short:"d" long:"dump" description:"Dump data of given column family"`
 	DumpAddresses               bool   `long:"dump-addresses" description:"Dump all addresses"`
 	DumpTokenSymbols            bool   `long:"dump-token-symbols" description:"Dump token symbols of all fungible and non-fungible tokens"`
+	DumpTokenInfo               bool   `long:"dump-token-info" description:"Dump token information"`
 	DumpBalances                bool   `long:"dump-balances" description:"Dump balances of all fungible tokens for all addresses"`
 	DumpBalancesNft             bool   `long:"dump-balances-nft" description:"Dump balances of all non-fungible tokens for all addresses"`
 	DumpBlockHashes             bool   `long:"dump-block-hashes" description:"Dump all block hashes"`
@@ -229,6 +230,8 @@ func main() {
 		appOpts.DumpStakingLeftovers || appOpts.DumpStakingMasterAge || appOpts.DumpStakingMasterClaims ||
 		appOpts.DumpNfts || appOpts.DumpSeries {
 		dump()
+	} else if appOpts.DumpTokenInfo {
+		dump_TokenInfo()
 	}
 
 	if appOpts.MergeKcalLeftovers {

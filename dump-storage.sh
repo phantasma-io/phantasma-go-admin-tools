@@ -47,3 +47,6 @@ json_format $OUT/nft_datas.json
 
 ./rocksdb-storage-reader -p $STORAGE -d -f=chain.main --dump-series --nft-balances-json=$OUT/nft_balances.json --output-format=json --output=$OUT/nft_series.json
 json_format $OUT/nft_series.json
+
+./rocksdb-storage-reader -p $STORAGE -f=chain.main --dump-token-info --subkeys-csv=$OUT/tokens_list.csv --output-format=json --output=$OUT/token_infos.json
+json_format $OUT/token_infos.json
