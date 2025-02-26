@@ -28,7 +28,7 @@ func (v *Visitor_ContractsInfos) Uninit() {
 	v.output.Flush()
 }
 
-var addresses []string
+var addresses_ContractsInfos []string
 
 func (v *Visitor_ContractsInfos) Visit(it *grocksdb.Iterator) bool {
 	if v.Connection == nil {
@@ -47,8 +47,8 @@ func (v *Visitor_ContractsInfos) Visit(it *grocksdb.Iterator) bool {
 	kr := storage.KeyValueReaderNew(keySlice.Data())
 	kr.SkipBytes(len(v.KeyPrefix))
 	address := kr.ReadAddress(false)
-	if !slices.Contains(addresses, address.Text()) {
-		addresses = append(addresses, address.Text())
+	if !slices.Contains(addresses_ContractsInfos, address.Text()) {
+		addresses_ContractsInfos = append(addresses_ContractsInfos, address.Text())
 	}
 
 	keySlice.Free()
@@ -65,7 +65,7 @@ func dump_ContractsInfos() {
 
 	v.Connection.Visit(&v)
 
-	for _, a := range addresses {
+	for _, a := range addresses_ContractsInfos {
 		address, err := cryptography.FromString(a)
 		if err != nil {
 			panic(err)
