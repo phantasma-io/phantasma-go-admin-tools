@@ -3,6 +3,8 @@ package storage
 import (
 	"encoding/json"
 	"strings"
+
+	"github.com/phantasma-io/phantasma-go/pkg/domain/contract"
 )
 
 type KeyValue struct {
@@ -156,5 +158,20 @@ func (b Block) String() string {
 	return "Height: " + b.Height + " Hash: " + b.Hash + " Bytes: " + b.Bytes
 }
 func (b Block) ToSlice() []string {
+	panic("not supported")
+}
+
+type ContractInfo struct {
+	Address string
+	Owner   string
+	Name    string
+	Script  []byte
+	ABI     contract.ContractInterface_S
+}
+
+func (b ContractInfo) String() string {
+	return "Name: " + b.Name + " Address: " + b.Address + " Owner: " + b.Owner
+}
+func (b ContractInfo) ToSlice() []string {
 	panic("not supported")
 }

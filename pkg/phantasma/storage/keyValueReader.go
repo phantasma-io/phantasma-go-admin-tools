@@ -28,6 +28,24 @@ func (k *KeyValueReader) TrimPrefix(p []byte) {
 	k.keyOrValue = bytes.TrimPrefix(k.keyOrValue, []byte(p))
 }
 
+func (k *KeyValueReader) ReadB() byte {
+	var b byte
+
+	br := *io.NewBinReaderFromBuf(k.keyOrValue)
+	b = br.ReadB()
+	k.keyOrValue = k.keyOrValue[br.Count:]
+
+	return b
+}
+
+func (k *KeyValueReader) SkipBytes(numberOfBytes int) {
+	br := *io.NewBinReaderFromBuf(k.keyOrValue)
+	for i := 0; i < numberOfBytes; i++ {
+		br.ReadB()
+	}
+	k.keyOrValue = k.keyOrValue[br.Count:]
+}
+
 func (k *KeyValueReader) ReadBytes(hasLengthPrefix bool) []byte {
 	var b []byte
 

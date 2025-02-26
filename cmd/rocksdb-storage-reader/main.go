@@ -38,6 +38,7 @@ var appOpts struct {
 	DumpStakes                  bool   `long:"dump-stakes" description:"Dump stakes"`
 	DumpNfts                    bool   `long:"dump-nfts" description:"Dump nfts"`
 	DumpSeries                  bool   `long:"dump-series" description:"Dump nft series"`
+	DumpContractInfos           bool   `long:"dump-contract-infos" description:"Dump common information about deployed contracts"`
 	MergeKcalLeftovers          bool   `long:"merge-kcal-leftovers" description:"Merge KCAL leftovers to balances"`
 	Decompress                  bool   `long:"decompress" description:"Decompress blocks and txes, works with --dump-blocks and --dump-txes. False by default"`
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
@@ -236,5 +237,9 @@ func main() {
 
 	if appOpts.MergeKcalLeftovers {
 		AddKcalLeftovers()
+	}
+
+	if appOpts.DumpContractInfos {
+		dump_ContractsInfos()
 	}
 }
