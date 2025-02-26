@@ -45,6 +45,7 @@ var appOpts struct {
 	BaseKey                     string `long:"base-key" description:"Filter contents by base key"`
 	SubKeys                     string `long:"subkeys" description:"Subkeys for given base key which needs to be dumped (coma-separated)"`
 	SubKeysCsv                  string `long:"subkeys-csv" description:"Subkeys for given base key which needs to be dumped (path to csv file)"`
+	SubKeysCsv2                 string `long:"subkeys-csv2" description:"Subkeys for given base key which needs to be dumped (path to csv file), will be merged with subkeys-csv"`
 	Addresses                   string `long:"addresses" description:"Addresses for filtering out results"`
 	BlockHeightsJson            string `long:"block-heigts-json" description:"JSON with block heights and hashes, result of --dump-block-hashes"`
 	FungibleBalancesJson        string `long:"fungible-balances-json" description:"JSON with fungible balances, result of --dump-balances"`
@@ -96,6 +97,26 @@ func main() {
 
 		for _, k := range data {
 			appOpts.subKeysSlice = append(appOpts.subKeysSlice, k[0])
+		}
+
+		if appOpts.SubKeysCsv2 != "" {
+			// We parse CSV file into appOpts.SubKeys slice
+
+			f, err := os.Open(appOpts.SubKeysCsv2)
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
+
+			csvReader := csv.NewReader(f)
+			data, err := csvReader.ReadAll()
+			if err != nil {
+				panic(err)
+			}
+
+			for _, k := range data {
+				appOpts.subKeysSlice = append(appOpts.subKeysSlice, k[0])
+			}
 		}
 	} else if appOpts.SubKeys != "" {
 		appOpts.subKeysSlice = strings.Split(appOpts.SubKeys, ",")
