@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"math/big"
 
-	util2 "github.com/phantasma-io/phantasma-go-admin-tools/pkg/util"
 	"github.com/phantasma-io/phantasma-go/pkg/cryptography"
 	"github.com/phantasma-io/phantasma-go/pkg/domain/types"
 	"github.com/phantasma-io/phantasma-go/pkg/io"
@@ -18,7 +17,7 @@ type KeyValueReader struct {
 
 func KeyValueReaderNew(keyOrValue []byte) *KeyValueReader {
 
-	return &KeyValueReader{originalKeyOrValue: keyOrValue, keyOrValue: util2.Dup(keyOrValue)}
+	return &KeyValueReader{originalKeyOrValue: keyOrValue, keyOrValue: util.ArrayClone(keyOrValue)}
 }
 
 func (k *KeyValueReader) GetRemainder() []byte {
@@ -55,7 +54,7 @@ func (k *KeyValueReader) ReadBytes(hasLengthPrefix bool) []byte {
 		b = br.ReadVarBytes()
 		k.keyOrValue = k.keyOrValue[br.Count:]
 	} else {
-		b = util2.Dup(k.keyOrValue) // Both clauses should have same behavior, we have to clone slice here
+		b = util.ArrayClone(k.keyOrValue) // Both clauses should have same behavior, we have to clone slice here
 		k.keyOrValue = nil
 	}
 

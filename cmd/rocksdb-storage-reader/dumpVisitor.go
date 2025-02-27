@@ -5,6 +5,7 @@ import (
 
 	"github.com/linxGnu/grocksdb"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
+	"github.com/phantasma-io/phantasma-go/pkg/util"
 )
 
 type DumpDataVisitor struct {
@@ -49,7 +50,7 @@ func (v *DumpDataVisitor) Visit(it *grocksdb.Iterator) bool {
 
 	valueSlice := it.Value()
 
-	result, success := DumpRow(v.Connection, keySlice.Data(), "", valueSlice.Data(), v.SubKeys1, v.Addresses, v.PanicOnUnknownSubkey)
+	result, success := DumpRow(v.Connection, util.ArrayClone(keySlice.Data()), "", util.ArrayClone(valueSlice.Data()), v.SubKeys1, v.Addresses, v.PanicOnUnknownSubkey)
 	if success {
 		v.output.AddRecord(result)
 	}

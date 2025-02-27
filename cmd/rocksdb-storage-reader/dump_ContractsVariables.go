@@ -10,7 +10,7 @@ import (
 	"github.com/linxGnu/grocksdb"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
-	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/util"
+	"github.com/phantasma-io/phantasma-go/pkg/util"
 )
 
 var seriePrefix string = "serie"
@@ -115,14 +115,14 @@ func (v *Visitor_ContractsVariables) Visit(it *grocksdb.Iterator) bool {
 
 		key := kr.ReadBytes(false)
 
-		v := storage.SingleVar{Key: key, Value: util.Dup(valueSlice.Data())}
+		v := storage.SingleVar{Key: key, Value: util.ArrayClone(valueSlice.Data())}
 		varMap.Values = append(varMap.Values, v)
 		contractItem.MapsAndLists[mapKey] = varMap
 	} else {
 		kr := storage.KeyValueReaderNew(keySlice.Data())
 		kr.SkipBytes(len(foundContract + "."))
 
-		contractItem.SingleVars = append(contractVariables[foundContract].SingleVars, storage.SingleVar{Key: kr.ReadString(false), Value: util.Dup(valueSlice.Data())})
+		contractItem.SingleVars = append(contractVariables[foundContract].SingleVars, storage.SingleVar{Key: kr.ReadString(false), Value: util.ArrayClone(valueSlice.Data())})
 	}
 
 	contractVariables[foundContract] = contractItem

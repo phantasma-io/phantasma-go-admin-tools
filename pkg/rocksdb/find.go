@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
+	"github.com/phantasma-io/phantasma-go/pkg/util"
 )
 
 func (c *Connection) FindKeyByValue(value []byte) (bool, []byte) {
@@ -17,7 +18,7 @@ func (c *Connection) FindKeyByValue(value []byte) (bool, []byte) {
 
 		if slices.Equal(valueSlice.Data(), value) {
 			keySlice := it.Key()
-			key := keySlice.Data()
+			key := util.ArrayClone(keySlice.Data())
 			keySlice.Free()
 			return true, key
 		}

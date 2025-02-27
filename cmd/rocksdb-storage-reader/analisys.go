@@ -7,6 +7,7 @@ import (
 
 	"github.com/linxGnu/grocksdb"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/util"
+	phautil "github.com/phantasma-io/phantasma-go/pkg/util"
 )
 
 type ListKeysWithUnknownBaseKeysVisitor struct {
@@ -75,9 +76,7 @@ func (v *ListUniqueSubKeysVisitor) Visit(it *grocksdb.Iterator) bool {
 
 	v.OverallFound++
 
-	subkeySrc := key.Data()[len(v.baseKey):]
-	subkey := make([]byte, len(subkeySrc))
-	copy(subkey, subkeySrc)
+	subkey := phautil.ArrayClone(key.Data()[len(v.baseKey):])
 
 	i := slices.IndexFunc(v.FoundSubKeys, func(b []byte) bool {
 		return bytes.Compare(b, subkey) == 0
