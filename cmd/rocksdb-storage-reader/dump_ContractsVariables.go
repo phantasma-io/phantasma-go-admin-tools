@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"slices"
 	"strings"
 	"unicode"
@@ -90,7 +91,7 @@ func (v *Visitor_ContractsVariables) Visit(it *grocksdb.Iterator) bool {
 
 	mapItemFound := false
 	mapKey := ""
-	for p, _ := range mapKeysAndCouns {
+	for _, p := range mapKeys {
 		if bytes.HasPrefix(keySlice.Data(), []byte(p)) {
 			mapItemFound = true
 			mapKey = p[len(foundContract+"."):len(p)]
@@ -138,6 +139,19 @@ func dump_ContractsVariables() {
 	v1.Init(appOpts.DbPath, appOpts.ColumnFamily, appOpts.OutputFormat)
 	v1.Connection.Visit(&v1)
 	v1.Uninit()
+
+	// Very important to sort map keys here in descending order
+	// to detect "timesDistributed" map first and "times" map next, not vise versa
+	// Otherwise maps' content will be stored incorrectly
+	slices.Sort(mapKeys)
+	slices.Reverse(mapKeys)
+	for _, mName := range mapKeys {
+		mCount, ok := mapKeysAndCouns[mName]
+		if !ok {
+			panic("Map not found: " + mName)
+		}
+		fmt.Printf("Map or list: %s - %d\n", mName, mCount.Int64())
+	}
 
 	v2 := Visitor_ContractsVariables{}
 	v2.Init(appOpts.DbPath, appOpts.ColumnFamily, appOpts.OutputFormat)

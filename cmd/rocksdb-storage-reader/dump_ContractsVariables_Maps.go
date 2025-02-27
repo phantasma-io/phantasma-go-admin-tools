@@ -13,6 +13,7 @@ import (
 var countSuffix string = "{count}"
 
 var mapKeysAndCouns map[string]big.Int = make(map[string]big.Int)
+var mapKeys []string = make([]string, 0)
 
 type Visitor_ContractsVariables_Maps struct {
 	Connection *rocksdb.Connection
@@ -74,7 +75,9 @@ func (v *Visitor_ContractsVariables_Maps) Visit(it *grocksdb.Iterator) bool {
 	valueSlice := it.Value()
 	vr := storage.KeyValueReaderNew(valueSlice.Data())
 	keyString = string(keySlice.Data())
-	mapKeysAndCouns[strings.TrimSuffix(keyString, countSuffix)] = *vr.ReadBigInt(false)
+	mapKey := strings.TrimSuffix(keyString, countSuffix)
+	mapKeysAndCouns[mapKey] = *vr.ReadBigInt(false)
+	mapKeys = append(mapKeys, mapKey)
 
 	keySlice.Free()
 	valueSlice.Free()
