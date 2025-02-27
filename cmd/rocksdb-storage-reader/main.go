@@ -11,6 +11,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
+	"github.com/phantasma-io/phantasma-go/pkg/domain/contract"
 )
 
 type BlockHeight struct {
@@ -39,6 +40,7 @@ var appOpts struct {
 	DumpNfts                    bool   `long:"dump-nfts" description:"Dump nfts"`
 	DumpSeries                  bool   `long:"dump-series" description:"Dump nft series"`
 	DumpContractNames           bool   `long:"dump-contract-names" description:"Dump names of deployed contracts"`
+	DumpContractVars            bool   `long:"dump-contract-vars" description:"Dump global variables of deployed contracts"`
 	DumpContractInfos           bool   `long:"dump-contract-infos" description:"Dump common information about deployed contracts"`
 	MergeKcalLeftovers          bool   `long:"merge-kcal-leftovers" description:"Merge KCAL leftovers to balances"`
 	Decompress                  bool   `long:"decompress" description:"Decompress blocks and txes, works with --dump-blocks and --dump-txes. False by default"`
@@ -50,6 +52,7 @@ var appOpts struct {
 	BlockHeightsJson            string `long:"block-heigts-json" description:"JSON with block heights and hashes, result of --dump-block-hashes"`
 	FungibleBalancesJson        string `long:"fungible-balances-json" description:"JSON with fungible balances, result of --dump-balances"`
 	NftBalancesJson             string `long:"nft-balances-json" description:"JSON with nft balances, result of --dump-balances-nft"`
+	NftDatasJson                string `long:"nft-datas-json" description:"JSON with nft datas, result of --dump-nfts"`
 	KcalLeftoversJson           string `long:"kcal-leftovers-json" description:"JSON with KCAL leftovers, result of --dump-staking-leftovers"`
 	PanicOnUnknownSubkey        bool   `long:"panic-on-unknown-subkey" description:"Crash if unknown subkey was detected"`
 	ListKeysWithUnknownBaseKeys bool   `long:"list-keys-with-unknown-base-keys" description:"Show keys with unknown base keys"`
@@ -67,6 +70,7 @@ var appOpts struct {
 	blockHeightsMap2 map[int]string
 	fungibleBalances []storage.BalanceFungible
 	nftBalances      []storage.BalanceNonFungible
+	nftTokenIds      []string
 	kcalLeftovers    []storage.KeyValue
 }
 
@@ -266,5 +270,29 @@ func main() {
 	}
 	if appOpts.DumpContractInfos {
 		dump_ContractsInfos()
+	}
+	if appOpts.DumpContractVars {
+		if len(appOpts.NftDatasJson) == 0 {
+			panic("This argument requires nft datas JSON file path to be provided with --nft-datas-json")
+		}
+
+		f, err := os.Open(appOpts.NftDatasJson)
+		if err != nil {
+			fmt.Println(err)
+		}
+		defer f.Close()
+
+		b, _ := io.ReadAll(f)
+		var tokenContents []contract.TokenContent_S = make([]contract.TokenContent_S, 0)
+		json.Unmarshal(b, &tokenContents)
+
+		appOpts.nftTokenIds = make([]string, 0)
+		for _, tokenContent := range tokenContents {
+			appOpts.nftTokenIds = append(appOpts.nftTokenIds, tokenContent.TokenID)
+		}
+
+		fmt.Printf("Loaded %d NFT ids\n", len(appOpts.nftTokenIds))
+
+		dump_ContractsVariables()
 	}
 }

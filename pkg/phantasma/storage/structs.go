@@ -175,3 +175,23 @@ func (b ContractInfo) String() string {
 func (b ContractInfo) ToSlice() []string {
 	panic("not supported")
 }
+
+type SingleVar struct {
+	Key   any
+	Value []byte
+}
+type MapOfVars struct {
+	Count  uint64
+	Values []SingleVar
+}
+type ContractVariables struct {
+	SingleVars   []SingleVar
+	MapsAndLists map[string]MapOfVars
+}
+
+func (b ContractVariables) String() string {
+	panic("not supported")
+}
+func (b ContractVariables) ToSlice() []string {
+	panic("not supported")
+}

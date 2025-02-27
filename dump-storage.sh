@@ -61,6 +61,9 @@ json_format $OUT/token_infos.json
 ./rocksdb-storage-reader -p $STORAGE -d -f=chain.main --dump-contract-infos  --output-format=json --output=$OUT/contract_infos.json
 json_format $OUT/contract_infos.json
 
+./rocksdb-storage-reader -p $STORAGE -d -f=chain.main --dump-contract-vars --nft-datas-json=$OUT/nft_datas.json --subkeys-csv=$OUT/tokens_list.csv  --subkeys-csv2=$OUT/contract_names.csv --output-format=json --output=$OUT/contract_variables.json
+json_format $OUT/contract_variables.json
+
 curl -X 'GET' 'https://pharpc2.phantasma.info/api/v1/GetTokens?extended=false' -H 'accept: application/json' > $OUT/token_addresses_and_supplies.json
 json_format $OUT/token_addresses_and_supplies.json
 json_del_key name $OUT/token_addresses_and_supplies.json
