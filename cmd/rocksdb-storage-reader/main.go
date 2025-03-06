@@ -167,12 +167,6 @@ func main() {
 		return
 	}
 
-	if appOpts.DumpStakingClaims || appOpts.DumpStakes || appOpts.DumpStakingLeftovers || appOpts.DumpStakingMasterAge {
-		if len(appOpts.subKeysSlice) == 0 {
-			panic("This argument requires addresses passed with --subkeys-csv or --subkeys keys")
-		}
-	}
-
 	if appOpts.DumpTransactions || appOpts.DumpBlocks {
 		if len(appOpts.BlockHeightsJson) == 0 {
 			panic("This argument requires block height JSON file path to be provided with --block-heigts-json")
@@ -253,8 +247,6 @@ func main() {
 
 	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpTokenSymbols || appOpts.DumpBalances || appOpts.DumpBalancesNft ||
 		appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpTransactions ||
-		appOpts.DumpStakingClaims || appOpts.DumpStakes ||
-		appOpts.DumpStakingLeftovers || appOpts.DumpStakingMasterAge || appOpts.DumpStakingMasterClaims ||
 		appOpts.DumpNfts || appOpts.DumpSeries {
 		dump()
 	} else if appOpts.DumpTokenInfo {
@@ -294,5 +286,21 @@ func main() {
 		fmt.Printf("Loaded %d NFT ids\n", len(appOpts.nftTokenIds))
 
 		dump_ContractsVariables()
+	}
+
+	if appOpts.DumpStakes {
+		dump_Stakes()
+	}
+	if appOpts.DumpStakingClaims {
+		dump_StakingClaims()
+	}
+	if appOpts.DumpStakingLeftovers {
+		dump_StakingLeftovers()
+	}
+	if appOpts.DumpStakingMasterAge {
+		dump_StakingMasterAge()
+	}
+	if appOpts.DumpStakingMasterClaims {
+		dump_StakingMasterClaims()
 	}
 }

@@ -44,13 +44,7 @@ func DumpRow(connection *rocksdb.Connection, key []byte, keyAlt string, value []
 	} else if appOpts.DumpStakingClaims {
 		energyClaim := phaio.Deserialize[*stake.EnergyClaim_S](value)
 		return storage.KeyValueJson{Key: keyAlt, Value: energyClaim}, true
-	} else if appOpts.DumpStakes {
-		energyStake := phaio.Deserialize[*stake.EnergyStake_S](value)
-		return storage.KeyValueJson{Key: keyAlt, Value: energyStake}, true
-	} else if appOpts.DumpStakingLeftovers {
-		vr := storage.KeyValueReaderNew(value)
-		return storage.KeyValueJson{Key: keyAlt, Value: vr.ReadBigInt(true).String()}, true
-	} else if appOpts.DumpStakingMasterAge || appOpts.DumpStakingMasterClaims {
+	} else if appOpts.DumpStakingMasterClaims {
 		vr := storage.KeyValueReaderNew(value)
 		return storage.KeyValueJson{Key: keyAlt, Value: vr.ReadTimestamp()}, true
 	} else if appOpts.DumpTransactions {

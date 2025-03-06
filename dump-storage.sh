@@ -22,20 +22,20 @@ cd ./bin
 # Getting all token symbols (both fungible and non-fungible)
 ./rocksdb-storage-reader -p $STORAGE -f=chain.main --dump-token-symbols --output-format=csv --output=$OUT/tokens_list.csv
 
-# Getting staking data using addresses.csv
-./rocksdb-storage-reader -p $STORAGE -f=chain.main --dump-staking-claims --subkeys-csv=$OUT/addresses.csv --output-format=json --output=$OUT/staking_claims.json
+# Getting staking data
+./rocksdb-storage-reader -p $STORAGE -f=chain.main --dump-staking-claims --output-format=json --output=$OUT/staking_claims.json
 json_format $OUT/staking_claims.json
 
-./rocksdb-storage-reader -p $STORAGE -f=chain.main --dump-stakes --subkeys-csv=$OUT/addresses.csv --output-format=json --output=$OUT/stakes.json
+./rocksdb-storage-reader -p $STORAGE -f=chain.main --dump-stakes --output-format=json --output=$OUT/stakes.json
 json_format $OUT/stakes.json
 
-./rocksdb-storage-reader -p $STORAGE -f=chain.main --dump-staking-master-age --subkeys-csv=$OUT/addresses.csv --output-format=json --output=$OUT/staking_master_age.json
+./rocksdb-storage-reader -p $STORAGE -f=chain.main --dump-staking-master-age --output-format=json --output=$OUT/staking_master_age.json
 json_format $OUT/staking_master_age.json
 
-./rocksdb-storage-reader -p $STORAGE -f=chain.main --dump-staking-master-claims --subkeys-csv=$OUT/addresses.csv --output-format=json --output=$OUT/staking_master_claims.json
+./rocksdb-storage-reader -p $STORAGE -f=chain.main --dump-staking-master-claims --output-format=json --output=$OUT/staking_master_claims.json
 json_format $OUT/staking_master_claims.json
 
-./rocksdb-storage-reader -p $STORAGE -f=chain.main --dump-staking-leftovers --subkeys-csv=$OUT/addresses.csv --output-format=json --output=$OUT/staking_leftovers.json
+./rocksdb-storage-reader -p $STORAGE -f=chain.main --dump-staking-leftovers --output-format=json --output=$OUT/staking_leftovers.json
 json_format $OUT/staking_leftovers.json
 
 # Getting non-fungible token balances using tokens_list.csv
