@@ -18,10 +18,20 @@ var cfgPayloadFragment string
 var cfgSymbol string
 var cfgEventKinds []event.EventKind
 var cfgShowFailedTxes bool
+var maxAttempts int = 100
 
-func getAllAddressTransactions(address string, includeTxes []string) []response.TransactionResult {
+func getAllAddressTransactions(address string, startingDate int64) []response.TransactionResult {
 	// Calling "GetAddressTransactionCount" method to get transactions for the address
-	transactionCount, err := client.GetAddressTransactionCount(address, "main")
+	var transactionCount int
+	var err error
+
+	for range maxAttempts {
+		transactionCount, err = client.GetAddressTransactionCount(address, "main")
+		if err == nil {
+			break
+		}
+	}
+
 	if err != nil {
 		panic("GetAddressTransactionCount call failed for address '" + address + "'! Error: " + err.Error())
 	}
@@ -36,37 +46,46 @@ func getAllAddressTransactions(address string, includeTxes []string) []response.
 
 	for p := 1; p <= pagesNumber; p++ {
 		// Calling "GetAddressTransactions" method to get transactions for the address
-		txsResponse, err := client.GetAddressTransactions(address, p, pageSize)
+
+		var txsResponse response.PaginatedResult[response.AddressTransactionsResult]
+		for range maxAttempts {
+			txsResponse, err = client.GetAddressTransactions(address, p, pageSize)
+			if err == nil {
+				break
+			}
+		}
+
 		if err != nil {
 			panic("GetAddressTransactions call failed for address '" + address + "'! Error: " + err.Error())
 		}
 		txs = append(txs, txsResponse.Result.Txs...)
+
+		if startingDate > 0 && txs[len(txs)-1].Timestamp < uint(startingDate) {
+			break
+		}
 	}
 
-	if includeTxes != nil && len(includeTxes) != 0 {
-		// removing txes which are not in s.Txs list
-		newLength := 0
-		for index := range txs {
-			if slices.Contains(includeTxes, txs[index].Hash) {
-				txs[newLength] = txs[index]
-				newLength++
-			}
-		}
-		// reslice the array to remove extra index
-		txs = txs[:newLength]
-	}
+	// TODO we need to filter out all txes which have been generated in blocks after account state's block.
 
 	return txs
 }
 
 func getCurrentAddressState(address string) response.AccountResult {
-	// Calling "GetAddressTransactionCount" method to get transactions for the address
 	var err error
-	account, err := client.GetAccountEx(address)
+	var account response.AccountResult
+	for range maxAttempts {
+		account, err = client.GetAccount(address)
+		if err == nil {
+			break
+		}
+	}
 	if err != nil {
-		panic("GetAccountEx call failed! Error: " + err.Error())
+		panic("GetAccount call failed! Error: " + err.Error())
 	}
 
+	// TODO we need to return block number corresponding to this state
+	// Otherwise we can't be 100% sure that our list of txes loaded after this call does not have tx which is not reflected in this state.
+	// Block number is not yet available on API
 	return account
 }
 
@@ -82,7 +101,7 @@ func printTransactions(address string, trackAccountState, useInitialState bool, 
 		account.Address = address
 	}
 
-	txes := getAllAddressTransactions(address, account.Txs)
+	txes := getAllAddressTransactions(address, 0)
 	slices.Reverse(txes) // Reordering txes, we need them ordered from older to newer
 
 	includedTxes := analysis.GetTransactionsByKind(txes, address, cfgSymbol, cfgPayloadFragment, cfgEventKinds, cfgShowFailedTxes)
@@ -127,7 +146,7 @@ func printOriginalState(address string, verbose bool) {
 
 	account := getCurrentAddressState(address)
 
-	txes := getAllAddressTransactions(address, account.Txs)
+	txes := getAllAddressTransactions(address, 0)
 
 	slices.Reverse(txes)
 
@@ -147,7 +166,7 @@ func printSmStates(address string, startingDate int64, verbose bool) {
 	}
 
 	account := getCurrentAddressState(address)
-	txes := getAllAddressTransactions(address, account.Txs)
+	txes := getAllAddressTransactions(address, startingDate)
 
 	slices.Reverse(txes)
 
