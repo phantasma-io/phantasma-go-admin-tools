@@ -2,7 +2,6 @@ package analysis
 
 import (
 	"encoding/hex"
-	"fmt"
 	"math/big"
 	"slices"
 
@@ -177,7 +176,7 @@ func applyEventToAccountState(e response.EventResult,
 					}
 
 				} else if verbose {
-					fmt.Println("Check tx: " + tx)
+					// fmt.Println("Check tx: " + tx)
 				}
 			} else {
 				// For KCAL we stake amount which equals to max fee value

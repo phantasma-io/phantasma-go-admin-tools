@@ -2,8 +2,11 @@ package main
 
 import (
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
+	"sync"
 	"time"
 
 	"github.com/jessevdk/go-flags"
@@ -39,6 +42,7 @@ var appOpts struct {
 	GetRelatedAddresses bool     `long:"get-related-addresses" description:"Get addresses which interacted with provided address"`
 	TrackAccountState   bool     `long:"track-account-state" description:"Shows balance state of address for every displayed transaction"`
 	UseInitialState     bool     `long:"use-initial-state" description:"Use initial state of address while replaying transactions with track-account-state argument"`
+	ExportSmRewardsJson string   `long:"export-sm-json" description:"Path to output JSON file with SM rewards"`
 	Verbose             bool     `short:"v" long:"verbose" description:"Verbose mode"`
 }
 
@@ -97,41 +101,134 @@ func main() {
 				panic(err)
 			}
 
-			addresses = data[0]
+			for _, row := range data {
+				if len(row) > 0 {
+					addresses = append(addresses, row[0])
+				}
+			}
 		} else {
 			addresses = []string{appOpts.Address}
 		}
 
 		// 1669852800 - Thu Dec 01 2022 00:00:00 GMT+0000
 		// 1701388800 - Fri Dec 01 2023 00:00:00 GMT+0000
-		startDate := int64(1701388800)
+		// 1704067200 - 2024-01-01 00:00:00 UTC
+		startDate := int64(1704067200)
 
 		if appOpts.Verbose {
-			fmt.Printf("Processing %d addresses for SM rewards eligibility starting %s", len(addresses), time.Unix(startDate, 0).UTC().Format(time.RFC822))
+			fmt.Printf("Processing %d addresses for SM rewards eligibility starting %s\n", len(addresses), time.Unix(startDate, 0).UTC().Format(time.RFC822))
 		}
 
-		notReported := 0
-		start := time.Now()
-		startIteration := time.Now()
+		if appOpts.ExportSmRewardsJson != "" {
+			type MonthEntry struct {
+				Count     int                `json:"count"`
+				Payload   string             `json:"payload"`
+				Addresses map[string]float64 `json:"addresses"`
+			}
 
-		for _, a := range addresses {
+			const rewardPerMonth = 125000.0
+			rewardsByMonth := make(map[string]*MonthEntry)
+
+			numWorkers := 4
+			sem := make(chan struct{}, numWorkers)
+			var wg sync.WaitGroup
+			var mu sync.Mutex
+
+			notReported := 0
+			start := time.Now()
+			startIteration := time.Now()
+			const reportEveryNIterations = 10
+
+			for _, addr := range addresses {
+				wg.Add(1)
+				sem <- struct{}{}
+
+				go func(addr string) {
+					defer wg.Done()
+					defer func() { <-sem }()
+
+					months := printSmStates(addr, startDate, appOpts.Verbose)
+
+					if len(months) > 0 {
+						mu.Lock()
+						for _, month := range months {
+							entry, ok := rewardsByMonth[month]
+							if !ok {
+								entry = &MonthEntry{
+									Addresses: make(map[string]float64),
+									Payload:   fmt.Sprintf("SM rewards for %s", month),
+								}
+								rewardsByMonth[month] = entry
+							}
+							entry.Addresses[addr] = 0
+						}
+						mu.Unlock()
+					}
+
+					if appOpts.Verbose {
+						mu.Lock()
+						notReported++
+						if notReported >= reportEveryNIterations {
+							elapsed := time.Since(startIteration)
+							fmt.Printf("Processed %d addresses [%d] in %f seconds, %f addresses per second\n",
+								notReported, len(addresses), elapsed.Seconds(), float64(notReported)/elapsed.Seconds())
+							notReported = 0
+							startIteration = time.Now()
+						}
+						mu.Unlock()
+					}
+				}(addr)
+			}
+
+			wg.Wait()
+
 			if appOpts.Verbose {
-				const reportEveryNIterations = 100
-				if notReported >= reportEveryNIterations {
-					elapsed := time.Since(startIteration)
-					fmt.Printf("Processed %d addresses [%d] in %f seconds, %f addresses per second\n", notReported, len(addresses), elapsed.Seconds(), float64(notReported)/elapsed.Seconds())
-					notReported = 0
-					startIteration = time.Now()
+				fmt.Printf("Processed %d addresses in %f minutes\n", len(addresses), time.Since(start).Minutes())
+			}
+
+			for _, entry := range rewardsByMonth {
+				count := len(entry.Addresses)
+				if count > 0 {
+					entry.Count = count
+					reward := rewardPerMonth / float64(count)
+					for k := range entry.Addresses {
+						entry.Addresses[k] = reward
+					}
 				}
 			}
 
-			printSmStates(a, startDate, appOpts.Verbose)
+			keys := make([]string, 0, len(rewardsByMonth))
+			for k := range rewardsByMonth {
+				keys = append(keys, k)
+			}
+			slices.Sort(keys)
 
-			notReported += 1
-		}
+			ordered := make(map[string]*MonthEntry)
+			for _, k := range keys {
+				ordered[k] = rewardsByMonth[k]
+			}
 
-		if appOpts.Verbose {
-			fmt.Printf("Processed %d addresses in %f minutes\n", len(addresses), time.Since(start).Minutes())
+			f, err := os.Create(appOpts.ExportSmRewardsJson)
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
+			enc := json.NewEncoder(f)
+			enc.SetIndent("", "  ")
+			err = enc.Encode(ordered)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			wr := csv.NewWriter(os.Stdout)
+
+			for _, addr := range addresses {
+				months := printSmStates(addr, startDate, appOpts.Verbose)
+				if len(months) > 0 {
+					wr.Write(append([]string{addr}, months...))
+					wr.Flush()
+				}
+			}
 		}
 	} else if appOpts.GetKnownAddresses {
 		addresses := analysis.GetAllKnownAddresses(clients, appOpts.BlockCache, appOpts.Verbose)

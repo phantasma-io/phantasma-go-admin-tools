@@ -17,7 +17,7 @@ func checkSmStateChangesDuringMonth(state []AccountState, year, month int, start
 	smStateChanged := false
 	startOfThisMonthSmState := startOfNextMonthSmState
 	for _, s := range state {
-		if s.Tx.Timestamp > uint(start.UTC().Unix()) && s.Tx.Timestamp < uint(end.UTC().Unix()) {
+		if s.Tx.Timestamp >= uint(start.UTC().Unix()) && s.Tx.Timestamp < uint(end.UTC().Unix()) {
 
 			if s.SmStateChanged {
 				smStateChanged = true
@@ -63,7 +63,7 @@ func DetectEligibleSm(currentSmState bool, states []AccountState, startingDate i
 		}
 
 		if isEligibleSm {
-			eligibleMonths = append(eligibleMonths, fmt.Sprintf("%d-%d", y, m))
+			eligibleMonths = append(eligibleMonths, fmt.Sprintf("%d-%02d", y, m))
 		}
 		// fmt.Printf("%d-%d: Setting this: isSmAtStartOfThisMonth: %t isEligibleSm: %t\n\n", y, m, isSmAtStartOfThisMonth, isEligibleSm)
 

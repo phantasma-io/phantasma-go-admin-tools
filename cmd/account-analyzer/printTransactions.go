@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/csv"
 	"encoding/json"
 	"fmt"
-	"os"
 	"slices"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/analysis"
@@ -160,7 +158,7 @@ func printOriginalState(address string, verbose bool) {
 	fmt.Print(string(body))
 }
 
-func printSmStates(address string, startingDate int64, verbose bool) {
+func printSmStates(address string, startingDate int64, verbose bool) []string {
 	if address == "" {
 		panic("Address should be set")
 	}
@@ -177,10 +175,5 @@ func printSmStates(address string, startingDate int64, verbose bool) {
 	slices.Reverse(states)
 	eligibleMonths := analysis.DetectEligibleSm(isSmNow, states, startingDate)
 
-	wr := csv.NewWriter(os.Stdout)
-
-	if len(eligibleMonths) > 0 {
-		wr.Write(append([]string{address}, eligibleMonths...))
-		wr.Flush()
-	}
+	return eligibleMonths
 }
