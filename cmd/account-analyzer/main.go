@@ -110,6 +110,18 @@ func main() {
 			addresses = []string{appOpts.Address}
 		}
 
+		progress, err := LoadProgress()
+		if err != nil {
+			panic(fmt.Errorf("failed to load state: %w", err))
+		}
+		filtered := make([]string, 0, len(addresses))
+		for _, addr := range addresses {
+			if !progress.IsDone(addr) {
+				filtered = append(filtered, addr)
+			}
+		}
+		addresses = filtered
+
 		// 1669852800 - Thu Dec 01 2022 00:00:00 GMT+0000
 		// 1701388800 - Fri Dec 01 2023 00:00:00 GMT+0000
 		// 1704067200 - 2024-01-01 00:00:00 UTC
@@ -148,29 +160,14 @@ func main() {
 					defer func() { <-sem }()
 
 					months := printSmStates(addr, startDate, appOpts.Verbose)
-
-					if len(months) > 0 {
-						mu.Lock()
-						for _, month := range months {
-							entry, ok := rewardsByMonth[month]
-							if !ok {
-								entry = &MonthEntry{
-									Addresses: make(map[string]float64),
-									Payload:   fmt.Sprintf("SM rewards for %s", month),
-								}
-								rewardsByMonth[month] = entry
-							}
-							entry.Addresses[addr] = 0
-						}
-						mu.Unlock()
-					}
+					progress.SaveResult(addr, months)
 
 					if appOpts.Verbose {
 						mu.Lock()
 						notReported++
 						if notReported >= reportEveryNIterations {
 							elapsed := time.Since(startIteration)
-							fmt.Printf("Processed %d addresses [%d] in %f seconds, %f addresses per second\n",
+							fmt.Printf("Processed %d addresses [%d] in %.2f seconds, %.2f addresses per second\n",
 								notReported, len(addresses), elapsed.Seconds(), float64(notReported)/elapsed.Seconds())
 							notReported = 0
 							startIteration = time.Now()
@@ -186,6 +183,22 @@ func main() {
 				fmt.Printf("Processed %d addresses in %f minutes\n", len(addresses), time.Since(start).Minutes())
 			}
 
+			// Build rewardsByMonth from progress state after all processing is done
+			for addr, months := range progress.Data {
+				for _, month := range months {
+					entry := rewardsByMonth[month]
+					if entry == nil {
+						entry = &MonthEntry{
+							Payload:   fmt.Sprintf("SM rewards for %s", month),
+							Addresses: make(map[string]float64),
+						}
+						rewardsByMonth[month] = entry
+					}
+					entry.Addresses[addr] = 0 // placeholder, will be replaced
+				}
+			}
+
+			// Fill actual rewards based on number of addresses per month
 			for _, entry := range rewardsByMonth {
 				count := len(entry.Addresses)
 				if count > 0 {
