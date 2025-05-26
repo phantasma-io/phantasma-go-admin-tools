@@ -19,31 +19,32 @@ var clients []rpc.PhantasmaRPC
 var client rpc.PhantasmaRPC
 
 var appOpts struct {
-	Nexus               string `short:"n" long:"nexus" description:"testnet or mainnet"`
-	Order               string `long:"order" default:"asc" description:"asc or desc"`
-	ordering            analysis.OrderDirection
-	Output              string   `short:"o" long:"output" description:"Output folder"`
-	Input               string   `short:"i" long:"input" description:"Data to process"`
-	Offset              uint     `long:"offset" description:"Offset for processed data"`
-	BlockCache          string   `long:"block-cache" description:"Path to folder containing blocks cache"`
-	Address             string   `short:"a" long:"address" description:"Address to analyse"`
-	AddressCsvPath      string   `long:"address-csv-path" description:"Path to CSV file with addresses"`
-	TokenSymbol         string   `long:"symbol" description:"Token symbol to track balance"`
-	EventKinds          []string `long:"event-kind" description:"Filter out transactions which do not have these events"`
-	ShowFungible        bool     `long:"show-fungible" description:"Show fungible token events and balances"`
-	ShowNonfungible     bool     `long:"show-nonfungible" description:"Show nonfungible token events and balances"`
-	ShowFailedTxes      bool     `long:"show-failed" description:"Shows failed transactions"`
-	GetInitialState     bool     `long:"get-initial-state" description:"Get initial state of address by replaying transactions in reverse order"`
-	GetSmStates         bool     `long:"get-sm-states" description:"Get per month SM states of address by replaying transactions in reverse order"`
-	GetAllBlocks        bool     `long:"get-all-blocks" description:"Get all chain blocks"`
-	GetKnownAddresses   bool     `long:"get-known-addresses" description:"Get all known addresses"`
-	AnalyzeTxes         bool     `long:"analyze-txes" description:"Runs analysis of all transactions from cached blocks"`
-	AnalyzeScript       bool     `long:"analyze-script" description:"Runs analysis of specified script"`
-	GetRelatedAddresses bool     `long:"get-related-addresses" description:"Get addresses which interacted with provided address"`
-	TrackAccountState   bool     `long:"track-account-state" description:"Shows balance state of address for every displayed transaction"`
-	UseInitialState     bool     `long:"use-initial-state" description:"Use initial state of address while replaying transactions with track-account-state argument"`
-	ExportSmRewardsJson string   `long:"export-sm-json" description:"Path to output JSON file with SM rewards"`
-	Verbose             bool     `short:"v" long:"verbose" description:"Verbose mode"`
+	Nexus                string `short:"n" long:"nexus" description:"testnet or mainnet"`
+	Order                string `long:"order" default:"asc" description:"asc or desc"`
+	ordering             analysis.OrderDirection
+	Output               string   `short:"o" long:"output" description:"Output folder"`
+	Input                string   `short:"i" long:"input" description:"Data to process"`
+	Offset               uint     `long:"offset" description:"Offset for processed data"`
+	BlockCache           string   `long:"block-cache" description:"Path to folder containing blocks cache"`
+	Address              string   `short:"a" long:"address" description:"Address to analyse"`
+	AddressCsvPath       string   `long:"address-csv-path" description:"Path to CSV file with addresses"`
+	IgnoreAddressCsvPath string   `long:"ignore-address-csv-path" description:"Path to CSV file with addresses to ignore"`
+	TokenSymbol          string   `long:"symbol" description:"Token symbol to track balance"`
+	EventKinds           []string `long:"event-kind" description:"Filter out transactions which do not have these events"`
+	ShowFungible         bool     `long:"show-fungible" description:"Show fungible token events and balances"`
+	ShowNonfungible      bool     `long:"show-nonfungible" description:"Show nonfungible token events and balances"`
+	ShowFailedTxes       bool     `long:"show-failed" description:"Shows failed transactions"`
+	GetInitialState      bool     `long:"get-initial-state" description:"Get initial state of address by replaying transactions in reverse order"`
+	GetSmStates          bool     `long:"get-sm-states" description:"Get per month SM states of address by replaying transactions in reverse order"`
+	GetAllBlocks         bool     `long:"get-all-blocks" description:"Get all chain blocks"`
+	GetKnownAddresses    bool     `long:"get-known-addresses" description:"Get all known addresses"`
+	AnalyzeTxes          bool     `long:"analyze-txes" description:"Runs analysis of all transactions from cached blocks"`
+	AnalyzeScript        bool     `long:"analyze-script" description:"Runs analysis of specified script"`
+	GetRelatedAddresses  bool     `long:"get-related-addresses" description:"Get addresses which interacted with provided address"`
+	TrackAccountState    bool     `long:"track-account-state" description:"Shows balance state of address for every displayed transaction"`
+	UseInitialState      bool     `long:"use-initial-state" description:"Use initial state of address while replaying transactions with track-account-state argument"`
+	ExportSmRewardsJson  string   `long:"export-sm-json" description:"Path to output JSON file with SM rewards"`
+	Verbose              bool     `short:"v" long:"verbose" description:"Verbose mode"`
 }
 
 func main() {
@@ -86,7 +87,28 @@ func main() {
 	if appOpts.GetInitialState {
 		printOriginalState(appOpts.Address, appOpts.Verbose)
 	} else if appOpts.GetSmStates {
+		addressesToIgnore := []string{}
 		addresses := []string{}
+
+		if appOpts.IgnoreAddressCsvPath != "" {
+			f, err := os.Open(appOpts.IgnoreAddressCsvPath)
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
+
+			csvReader := csv.NewReader(f)
+			data, err := csvReader.ReadAll()
+			if err != nil {
+				panic(err)
+			}
+
+			for _, row := range data {
+				if len(row) > 0 {
+					addressesToIgnore = append(addressesToIgnore, row[0])
+				}
+			}
+		}
 
 		if appOpts.AddressCsvPath != "" {
 			f, err := os.Open(appOpts.AddressCsvPath)
@@ -116,7 +138,7 @@ func main() {
 		}
 		filtered := make([]string, 0, len(addresses))
 		for _, addr := range addresses {
-			if !progress.IsDone(addr) {
+			if !progress.IsDone(addr) && !slices.Contains(addressesToIgnore, addr) {
 				filtered = append(filtered, addr)
 			}
 		}

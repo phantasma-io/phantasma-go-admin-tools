@@ -78,7 +78,7 @@ func getCurrentAddressState(address string) response.AccountResult {
 		}
 	}
 	if err != nil {
-		panic("GetAccount call failed! Error: " + err.Error())
+		panic("GetAccount call failed for address '" + address + "'! Error: " + err.Error())
 	}
 
 	// TODO we need to return block number corresponding to this state
