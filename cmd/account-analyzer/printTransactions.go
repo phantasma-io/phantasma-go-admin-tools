@@ -69,14 +69,16 @@ func getAllAddressTransactions(address string, startingDate int64) []response.Tr
 	return txs
 }
 
-func getCurrentAddressState(address string) response.AccountResult {
+func getCurrentAddressState(address string) (response.AccountResult, string) {
 	var err error
 	var account response.AccountResult
 	for range maxAttempts {
 		account, err = client.GetAccount(address)
 
 		if err != nil && strings.Contains(err.Error(), "Address is invalid") {
-			panic("Address is invalid: " + address)
+			errString := "Address is invalid: " + address
+			fmt.Println(errString)
+			return account, errString
 		}
 
 		if err == nil {
@@ -90,7 +92,7 @@ func getCurrentAddressState(address string) response.AccountResult {
 	// TODO we need to return block number corresponding to this state
 	// Otherwise we can't be 100% sure that our list of txes loaded after this call does not have tx which is not reflected in this state.
 	// Block number is not yet available on API
-	return account
+	return account, ""
 }
 
 func printTransactions(address string, trackAccountState, useInitialState bool, orderDirection analysis.OrderDirection, verbose, printRelatedAddresses bool) {
@@ -100,7 +102,11 @@ func printTransactions(address string, trackAccountState, useInitialState bool, 
 
 	var account response.AccountResult
 	if useInitialState {
-		account = getCurrentAddressState(address)
+		var errString string
+		account, errString = getCurrentAddressState(address)
+		if errString != "" {
+			panic(errString)
+		}
 	} else {
 		account.Address = address
 	}
@@ -148,7 +154,10 @@ func printOriginalState(address string, verbose bool) {
 		panic("Address should be set")
 	}
 
-	account := getCurrentAddressState(address)
+	account, errString := getCurrentAddressState(address)
+	if errString != "" {
+		panic(errString)
+	}
 
 	txes := getAllAddressTransactions(address, 0)
 
@@ -164,12 +173,15 @@ func printOriginalState(address string, verbose bool) {
 	fmt.Print(string(body))
 }
 
-func printSmStates(address string, startingDate int64, verbose bool) []string {
+func printSmStates(address string, startingDate int64, verbose bool) ([]string, string) {
 	if address == "" {
 		panic("Address should be set")
 	}
 
-	account := getCurrentAddressState(address)
+	account, errString := getCurrentAddressState(address)
+	if errString != "" {
+		return []string{}, errString
+	}
 	txes := getAllAddressTransactions(address, startingDate)
 
 	slices.Reverse(txes)
@@ -181,5 +193,5 @@ func printSmStates(address string, startingDate int64, verbose bool) []string {
 	slices.Reverse(states)
 	eligibleMonths := analysis.DetectEligibleSm(isSmNow, states, startingDate)
 
-	return eligibleMonths
+	return eligibleMonths, ""
 }
