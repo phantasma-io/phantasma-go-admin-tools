@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-const stateFile = "state-progress.json"
-
 type SimpleProgress struct {
 	Data           map[string][]string
 	Timestamps     map[string]int64 // new: stores last updated timestamps
@@ -25,17 +23,17 @@ func LoadProgress() (*SimpleProgress, error) {
 		Timestamps: make(map[string]int64),
 	}
 
-	bytes, err := os.ReadFile(stateFile)
+	bytes, err := os.ReadFile(appOpts.SmStatesFilePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return p, nil // fresh
 		}
-		return nil, fmt.Errorf("cannot read %s: %w", stateFile, err)
+		return nil, fmt.Errorf("cannot read %s: %w", appOpts.SmStatesFilePath, err)
 	}
 
 	var raw map[string]any
 	if err := json.Unmarshal(bytes, &raw); err != nil {
-		return nil, fmt.Errorf("failed to parse %s: %w", stateFile, err)
+		return nil, fmt.Errorf("failed to parse %s: %w", appOpts.SmStatesFilePath, err)
 	}
 
 	for k, v := range raw {
@@ -143,7 +141,7 @@ func (p *SimpleProgress) SaveResult(address string, months []string) {
 		fmt.Fprintf(os.Stderr, "failed to marshal state: %v\n", err)
 		return
 	}
-	if err := os.WriteFile(stateFile, bytes, 0644); err != nil {
+	if err := os.WriteFile(appOpts.SmStatesFilePath, bytes, 0644); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to write state: %v\n", err)
 	}
 }

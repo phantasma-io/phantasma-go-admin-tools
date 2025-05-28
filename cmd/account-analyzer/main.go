@@ -32,6 +32,7 @@ var appOpts struct {
 	IgnoreAddressCsvPath     string   `long:"ignore-address-csv-path" description:"Path to CSV file with addresses to ignore"`
 	InvalidAddressOutputPath string   `long:"invalid-address-output-path" description:"Path to file to write invalid addresses to"`
 	ErrorsOutputPath         string   `long:"errors-output-path" description:"Path to file to write errors to"`
+	SmStatesFilePath         string   `long:"sm-states-file-path" description:"Path to SM states file"`
 	TokenSymbol              string   `long:"symbol" description:"Token symbol to track balance"`
 	EventKinds               []string `long:"event-kind" description:"Filter out transactions which do not have these events"`
 	ShowFungible             bool     `long:"show-fungible" description:"Show fungible token events and balances"`
@@ -110,6 +111,9 @@ func main() {
 		}
 		if appOpts.ErrorsOutputPath == "" {
 			panic("--errors-output-path argument must be set")
+		}
+		if appOpts.SmStatesFilePath == "" {
+			panic("--sm-states-file-path argument must be set")
 		}
 
 		addressesToIgnore := []string{}
