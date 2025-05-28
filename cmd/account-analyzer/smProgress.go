@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 )
 
 const stateFile = "state-progress.json"
 
 type SimpleProgress struct {
 	Data           map[string][]string
+	Timestamps     map[string]int64 // new: stores last updated timestamps
 	ProcessedCount int
 	EligibleTotal  int
 	lock           sync.Mutex
@@ -19,7 +21,8 @@ type SimpleProgress struct {
 // LoadProgress loads the JSON file from disk
 func LoadProgress() (*SimpleProgress, error) {
 	p := &SimpleProgress{
-		Data: make(map[string][]string),
+		Data:       make(map[string][]string),
+		Timestamps: make(map[string]int64),
 	}
 
 	bytes, err := os.ReadFile(stateFile)
@@ -50,18 +53,38 @@ func LoadProgress() (*SimpleProgress, error) {
 			continue
 		}
 
-		arr, ok := v.([]any)
-		if !ok {
+		// BEGIN: v1 format parser (to be deleted later)
+		if arr, ok := v.([]any); ok {
+			months := make([]string, 0, len(arr))
+			for _, m := range arr {
+				if s, ok := m.(string); ok {
+					months = append(months, s)
+				}
+			}
+			p.Data[k] = months
+			p.Timestamps[k] = time.Now().Unix() // new: backfill timestamp
 			continue
 		}
+		// END: v1 format parser
 
-		months := make([]string, 0, len(arr))
-		for _, m := range arr {
-			if s, ok := m.(string); ok {
-				months = append(months, s)
+		// v2 format
+		if entry, ok := v.(map[string]any); ok {
+			months := []string{} // always initialize as empty slice
+			if arr, ok := entry["months"].([]any); ok {
+				for _, m := range arr {
+					if s, ok := m.(string); ok {
+						months = append(months, s)
+					}
+				}
+			}
+			p.Data[k] = months
+
+			if ts, ok := entry["updated"].(float64); ok {
+				p.Timestamps[k] = int64(ts)
+			} else {
+				p.Timestamps[k] = time.Now().Unix() // new: backfill if missing
 			}
 		}
-		p.Data[k] = months
 	}
 
 	return p, nil
@@ -86,25 +109,32 @@ func (p *SimpleProgress) SaveResult(address string, months []string) {
 		return
 	}
 
-	// Load original JSON from disk (merge-safe)
-	raw := make(map[string]any)
-	file, err := os.ReadFile(stateFile)
-	if err == nil {
-		_ = json.Unmarshal(file, &raw)
+	// Ensure months is at least an empty slice to avoid null in JSON
+	if months == nil {
+		months = []string{}
 	}
 
 	// Add the address
-	raw[address] = months
 	p.Data[address] = months
+	p.Timestamps[address] = time.Now().Unix() // new: save timestamp
 
 	// Update meta
 	p.ProcessedCount++
 	if len(months) > 0 {
 		p.EligibleTotal++
 	}
+
+	raw := make(map[string]any, len(p.Data)+1)
 	raw["_meta"] = map[string]any{
 		"processed":     p.ProcessedCount,
 		"eligibleTotal": p.EligibleTotal,
+	}
+
+	for addr, months := range p.Data {
+		raw[addr] = map[string]any{
+			"months":  months,
+			"updated": p.Timestamps[addr], // new: include timestamp in output
+		}
 	}
 
 	// Save back
