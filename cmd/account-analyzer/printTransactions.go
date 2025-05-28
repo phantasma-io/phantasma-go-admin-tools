@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/analysis"
 	"github.com/phantasma-io/phantasma-go/pkg/domain/event"
@@ -73,6 +74,11 @@ func getCurrentAddressState(address string) response.AccountResult {
 	var account response.AccountResult
 	for range maxAttempts {
 		account, err = client.GetAccount(address)
+
+		if err != nil && strings.Contains(err.Error(), "Address is invalid") {
+			panic("Address is invalid: " + address)
+		}
+
 		if err == nil {
 			break
 		}
