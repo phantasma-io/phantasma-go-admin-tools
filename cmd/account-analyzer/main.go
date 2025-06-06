@@ -4,6 +4,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"os"
 	"slices"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/analysis"
 	"github.com/phantasma-io/phantasma-go/pkg/domain/event"
 	"github.com/phantasma-io/phantasma-go/pkg/rpc"
+	"github.com/phantasma-io/phantasma-go/pkg/util"
 )
 
 var clients []rpc.PhantasmaRPC
@@ -184,12 +186,15 @@ func main() {
 
 		if appOpts.ExportSmRewardsJson != "" {
 			type MonthEntry struct {
-				Count     int                `json:"count"`
-				Payload   string             `json:"payload"`
-				Addresses map[string]float64 `json:"addresses"`
+				Count              int      `json:"count"`
+				Payload            string   `json:"payload"`
+				Reward             string   `json:"reward"`
+				RewardWithDecimals string   `json:"reward_d"`
+				Addresses          []string `json:"addresses"`
 			}
 
-			const rewardPerMonth = 125000.0
+			rewardPerMonth, _ := new(big.Int).SetString("12500000000000", 10)
+
 			rewardsByMonth := make(map[string]*MonthEntry)
 
 			numWorkers := 4
@@ -249,11 +254,12 @@ func main() {
 					if entry == nil {
 						entry = &MonthEntry{
 							Payload:   fmt.Sprintf("SM rewards for %s", month),
-							Addresses: make(map[string]float64),
+							Addresses: make([]string, 0),
 						}
 						rewardsByMonth[month] = entry
 					}
-					entry.Addresses[addr] = 0 // placeholder, will be replaced
+
+					entry.Addresses = append(entry.Addresses, addr)
 				}
 			}
 
@@ -262,10 +268,9 @@ func main() {
 				count := len(entry.Addresses)
 				if count > 0 {
 					entry.Count = count
-					reward := rewardPerMonth / float64(count)
-					for k := range entry.Addresses {
-						entry.Addresses[k] = reward
-					}
+					reward := new(big.Int).Div(rewardPerMonth, new(big.Int).SetInt64(int64(count)))
+					entry.Reward = reward.String()
+					entry.RewardWithDecimals = util.ConvertDecimals(reward, 8)
 				}
 			}
 
