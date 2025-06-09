@@ -56,21 +56,10 @@ func CheckIfSmStateChanged(staked1, staked2 *big.Float) bool {
 		(staked2.Cmp(big.NewFloat(SmThreshold)) >= 0 && staked1.Cmp(big.NewFloat(SmThreshold)) < 0)
 }
 
-func CheckIfSm(a *response.AccountResult) bool {
-	return a.Stakes.ConvertDecimalsToFloat().Cmp(big.NewFloat(SmThreshold)) >= 0
-}
-
-func (a *AccountState) CheckIfSm() bool {
-	return CheckIfSm(&a.State)
-}
-
-func arrayHasEmpoty(a []string) bool {
-	for _, s := range a {
-		if s == "" {
-			return true
-		}
-	}
-	return false
+func CheckIfSm(s *response.StakeResult, txHash string) bool {
+	issm := s.ConvertDecimalsToFloat().Cmp(big.NewFloat(SmThreshold)) >= 0
+	// fmt.Printf("STAKES: %f ISSM: %t TX: %s\n", s.ConvertDecimalsToFloat(), issm, txHash)
+	return issm
 }
 
 // amountAdd Adds value to balance's amount
@@ -387,12 +376,10 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 
 			state[txIndex].State = *account.Clone()
 			// Detecting if account is an SM in this state
-			state[txIndex].IsSm = CheckIfSm(account)
+			state[txIndex].IsSm = CheckIfSm(&account.Stakes, state[txIndex].Tx.Hash)
 		} else {
 			// Saving state first, modifying it later, because processingDirection is Backward
 			state[txIndex].State = *account.Clone()
-			// Detecting if account is an SM in this state
-			state[txIndex].IsSm = CheckIfSm(account)
 
 			var txRelatedAddresses []string
 			state[txIndex].SmStateChanged, state[txIndex].StakeClaimType, txRelatedAddresses = applyTransactionToAccountState(txs[txIndex], account, processingDirection, verbose)
@@ -400,6 +387,11 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 			if txRelatedAddresses != nil {
 				relatedAddresses = append(relatedAddresses, txRelatedAddresses...)
 			}
+
+			// Detecting if account is an SM in this state
+			// For backward direction we should also do this check after applyTransactionToAccountState() call
+			// Because we need staked SOUL to appear after reversing unstake tx
+			state[txIndex].IsSm = CheckIfSm(&account.Stakes, state[txIndex].Tx.Hash)
 		}
 	}
 

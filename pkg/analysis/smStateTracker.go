@@ -21,9 +21,11 @@ func checkSmStateChangesDuringMonth(state []AccountState, year, month int, start
 
 			if s.SmStateChanged {
 				smStateChanged = true
+				// fmt.Printf("Month %d-%d state: smStateChanged: %t\n", year, month, smStateChanged)
 			}
 
 			startOfThisMonthSmState = s.IsSm
+			// fmt.Printf("Month %d-%d state: startOfThisMonthSmState: %t stakes: %f\n", year, month, startOfThisMonthSmState, s.State.Stakes.ConvertDecimalsToFloat())
 		}
 	}
 
@@ -44,6 +46,7 @@ func DetectEligibleSm(currentSmState bool, states []AccountState, startingDate i
 	isEligibleSm := false
 
 	isSmAtStartOfThisMonth, smStateChanged := checkSmStateChangesDuringMonth(states, y, m, currentSmState)
+	// fmt.Printf("First state: isSmAtStartOfThisMonth: %t\n", isSmAtStartOfThisMonth)
 
 	for {
 		m -= 1
@@ -53,6 +56,7 @@ func DetectEligibleSm(currentSmState bool, states []AccountState, startingDate i
 		}
 
 		isSmAtStartOfThisMonth, smStateChanged = checkSmStateChangesDuringMonth(states, y, m, isSmAtStartOfThisMonth)
+		// fmt.Printf("Month %d-%d state: isSmAtStartOfThisMonth: %t\n", y, m, isSmAtStartOfThisMonth)
 
 		if smStateChanged {
 			// State changed during month - not eligible
