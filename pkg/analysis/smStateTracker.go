@@ -32,7 +32,7 @@ func checkSmStateChangesDuringMonth(state []AccountState, year, month int, start
 	return startOfThisMonthSmState, smStateChanged
 }
 
-func DetectEligibleSm(currentSmState bool, states []AccountState, startingDate int64) []string {
+func DetectEligibleSm(currentSmState bool, states []AccountState, startingDate int64, verbose bool) []string {
 	currentTime := time.Now().UTC()
 	t := time.Unix(int64(startingDate), 0).UTC()
 	startingYear := t.Year()
@@ -46,7 +46,9 @@ func DetectEligibleSm(currentSmState bool, states []AccountState, startingDate i
 	isEligibleSm := false
 
 	isSmAtStartOfThisMonth, smStateChanged := checkSmStateChangesDuringMonth(states, y, m, currentSmState)
-	// fmt.Printf("First state: isSmAtStartOfThisMonth: %t\n", isSmAtStartOfThisMonth)
+	if verbose {
+		fmt.Printf("First state: isSmAtStartOfThisMonth: %t\n", isSmAtStartOfThisMonth)
+	}
 
 	for {
 		m -= 1
@@ -56,7 +58,9 @@ func DetectEligibleSm(currentSmState bool, states []AccountState, startingDate i
 		}
 
 		isSmAtStartOfThisMonth, smStateChanged = checkSmStateChangesDuringMonth(states, y, m, isSmAtStartOfThisMonth)
-		// fmt.Printf("Month %d-%d state: isSmAtStartOfThisMonth: %t\n", y, m, isSmAtStartOfThisMonth)
+		if verbose {
+			fmt.Printf("Month %d-%d state: isSmAtStartOfThisMonth: %t\n", y, m, isSmAtStartOfThisMonth)
+		}
 
 		if smStateChanged {
 			// State changed during month - not eligible
@@ -69,7 +73,9 @@ func DetectEligibleSm(currentSmState bool, states []AccountState, startingDate i
 		if isEligibleSm {
 			eligibleMonths = append(eligibleMonths, fmt.Sprintf("%d-%02d", y, m))
 		}
-		// fmt.Printf("%d-%d: Setting this: isSmAtStartOfThisMonth: %t isEligibleSm: %t\n\n", y, m, isSmAtStartOfThisMonth, isEligibleSm)
+		if verbose {
+			fmt.Printf("%d-%d: Setting this: isSmAtStartOfThisMonth: %t isEligibleSm: %t\n\n", y, m, isSmAtStartOfThisMonth, isEligibleSm)
+		}
 
 		if y == startingYear && m == startingMonth {
 			break

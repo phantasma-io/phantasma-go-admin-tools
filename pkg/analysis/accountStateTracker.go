@@ -2,6 +2,7 @@ package analysis
 
 import (
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"slices"
 
@@ -56,9 +57,11 @@ func CheckIfSmStateChanged(staked1, staked2 *big.Float) bool {
 		(staked2.Cmp(big.NewFloat(SmThreshold)) >= 0 && staked1.Cmp(big.NewFloat(SmThreshold)) < 0)
 }
 
-func CheckIfSm(s *response.StakeResult, txHash string) bool {
+func CheckIfSm(s *response.StakeResult, txHash string, verbose bool) bool {
 	issm := s.ConvertDecimalsToFloat().Cmp(big.NewFloat(SmThreshold)) >= 0
-	// fmt.Printf("STAKES: %f ISSM: %t TX: %s\n", s.ConvertDecimalsToFloat(), issm, txHash)
+	if verbose {
+		fmt.Printf("STAKES: %f ISSM: %t TX: %s\n", s.ConvertDecimalsToFloat(), issm, txHash)
+	}
 	return issm
 }
 
@@ -107,7 +110,6 @@ func idRemove(ids *[]string, id string, processingDirection ProcessingDirection)
 }
 
 func applyEventToAccountState(e response.EventResult,
-	previousEvent *response.EventResult,
 	a *response.AccountResult,
 	processingDirection ProcessingDirection, tx string, stakeClaimType StakeClaimType, verbose bool) bool {
 
@@ -152,20 +154,21 @@ func applyEventToAccountState(e response.EventResult,
 		// For now we process stakes for SOUL only, ignoring isStakable() flag
 		case event.TokenStake:
 			if t.IsStakable() { // We assume it's SOUL token
-				if previousEvent == nil || previousEvent.Data != e.Data { // Checking for duplicated stake event (workaround for chain bug)
-					tokenBalance.Amount = amountSub(currentAmount, eventData.Value, processingDirection).String()
-					if stakeClaimType == Normal { // We need to exclude staking related to events like "OrderFilled" or "OrderBid"
-						originalStakedAmount := a.Stakes.ConvertDecimalsToFloat()
+				tokenBalance.Amount = amountSub(currentAmount, eventData.Value, processingDirection).String()
+				if stakeClaimType == Normal { // We need to exclude staking related to events like "OrderFilled" or "OrderBid"
+					originalStakedAmount := a.Stakes.ConvertDecimalsToFloat()
 
-						a.Stake = amountAdd(currentSoulStaked, eventData.Value, processingDirection).String()
-						a.Stakes.Amount = a.Stake
+					// if previousEvent == nil {
+					// fmt.Printf("ADD: DATA: %s[%s] PDATA: NIL AMOUNT: %s\n", e.Data, e.Kind, eventData.Value.String())
+					// } else {
+					// fmt.Printf("ADD: DATA: %s[%s] PDATA: %s[%s] AMOUNT: %s\n", e.Data, e.Kind, previousEvent.Data, previousEvent.Kind, eventData.Value.String())
+					// }
 
-						newStakedAmount := a.Stakes.ConvertDecimalsToFloat()
-						smStateChanged = CheckIfSmStateChanged(originalStakedAmount, newStakedAmount)
-					}
+					a.Stake = amountAdd(currentSoulStaked, eventData.Value, processingDirection).String()
+					a.Stakes.Amount = a.Stake
 
-				} else if verbose {
-					// fmt.Println("Check tx: " + tx)
+					newStakedAmount := a.Stakes.ConvertDecimalsToFloat()
+					smStateChanged = CheckIfSmStateChanged(originalStakedAmount, newStakedAmount)
 				}
 			} else {
 				// For KCAL we stake amount which equals to max fee value
@@ -177,6 +180,8 @@ func applyEventToAccountState(e response.EventResult,
 				tokenBalance.Amount = amountAdd(currentAmount, eventData.Value, processingDirection).String()
 				if stakeClaimType == Normal { // We need to exclude events related to SM rewards claiming and also claiming related to market events (payment when author's nft is being sold generates claim event)
 					originalStakedAmount := a.Stakes.ConvertDecimalsToFloat()
+
+					// fmt.Printf("SUB: DATA: %s AMOUNT: %s\n", e.Data, eventData.Value.String())
 
 					a.Stake = amountSub(currentSoulStaked, eventData.Value, processingDirection).String()
 					a.Stakes.Amount = a.Stake
@@ -249,9 +254,28 @@ func findPairEvent(es []response.EventResult, eventKind1 event.EventKind, amount
 	panic("Event pair not found")
 }
 
+// Deduplicating events (workaround for legacy Phantasma bug)
+func CollapseByKindAndData(entries []response.EventResult) []response.EventResult {
+	seen := make(map[string]bool)
+	result := make([]response.EventResult, 0, len(entries))
+
+	for _, e := range entries {
+		key := e.Kind + "|" + e.Data // create a unique composite key
+		if !seen[key] {
+			seen[key] = true
+			result = append(result, e)
+		}
+	}
+
+	return result
+}
+
 func applyEventsToAccountState(es []response.EventResult, a *response.AccountResult, processingDirection ProcessingDirection, tx string, verbose bool) (bool, StakeClaimType, []string) {
 	stakeClaimType := Normal
 	smStateChanged := false
+
+	es = CollapseByKindAndData(es)
+
 	for _, e := range es {
 		eventKind := event.Unknown
 		eventKind.SetString(e.Kind)
@@ -307,7 +331,7 @@ func applyEventsToAccountState(es []response.EventResult, a *response.AccountRes
 		}
 
 		if applyEventToAccountState(e,
-			previousEvent,
+			// previousEvent,
 			a,
 			processingDirection, tx, stakeClaimType, verbose) {
 
@@ -376,7 +400,7 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 
 			state[txIndex].State = *account.Clone()
 			// Detecting if account is an SM in this state
-			state[txIndex].IsSm = CheckIfSm(&account.Stakes, state[txIndex].Tx.Hash)
+			state[txIndex].IsSm = CheckIfSm(&account.Stakes, state[txIndex].Tx.Hash, verbose)
 		} else {
 			// Saving state first, modifying it later, because processingDirection is Backward
 			state[txIndex].State = *account.Clone()
@@ -391,7 +415,7 @@ func TrackAccountStateByEvents(txs []response.TransactionResult,
 			// Detecting if account is an SM in this state
 			// For backward direction we should also do this check after applyTransactionToAccountState() call
 			// Because we need staked SOUL to appear after reversing unstake tx
-			state[txIndex].IsSm = CheckIfSm(&account.Stakes, state[txIndex].Tx.Hash)
+			state[txIndex].IsSm = CheckIfSm(&account.Stakes, state[txIndex].Tx.Hash, verbose)
 		}
 	}
 

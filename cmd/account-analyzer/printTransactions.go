@@ -186,12 +186,12 @@ func printSmStates(address string, startingDate int64, verbose bool) ([]string, 
 
 	slices.Reverse(txes)
 
-	isSmNow := analysis.CheckIfSm(&account.Stakes, "NONE")
+	isSmNow := analysis.CheckIfSm(&account.Stakes, "NONE", verbose)
 	states, _ := analysis.TrackAccountStateByEvents(txes, &account, analysis.Backward, verbose)
 
 	// We process from now on to the past, so we need to revert states, latest state should be first
 	slices.Reverse(states)
-	eligibleMonths := analysis.DetectEligibleSm(isSmNow, states, startingDate)
+	eligibleMonths := analysis.DetectEligibleSm(isSmNow, states, startingDate, verbose)
 
 	return eligibleMonths, ""
 }
