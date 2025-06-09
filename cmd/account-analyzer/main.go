@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"os"
 	"slices"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -261,6 +262,11 @@ func main() {
 
 					entry.Addresses = append(entry.Addresses, addr)
 				}
+			}
+
+			// Sort addresses alphabetically within each month
+			for _, entry := range rewardsByMonth {
+				sort.Strings(entry.Addresses)
 			}
 
 			// Fill actual rewards based on number of addresses per month
