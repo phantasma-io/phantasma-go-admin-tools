@@ -5,4 +5,4 @@ just build-account-analyzer
   --invalid-address-output-path=./data/invalid-addresses.csv \
   --errors-output-path=./data/errors.log \
   --sm-states-file-path=./data/sm-states.json \
-  --export-sm-json=./data/sm-rewards.json --verbose
+  --export-sm-json=./data/sm-rewards.json #--verbose
