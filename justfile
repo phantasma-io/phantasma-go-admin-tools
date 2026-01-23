@@ -1,5 +1,8 @@
 STORAGE := "~/github/phantasma/phantasma-storage-data-legacy"
 
+[private]
+default:
+    just -l
 
 [group('doc')]
 guide:
