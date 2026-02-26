@@ -7,11 +7,67 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/linxGnu/grocksdb"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
 	"github.com/phantasma-io/phantasma-go/pkg/domain/contract"
 	phaio "github.com/phantasma-io/phantasma-go/pkg/io"
+	"github.com/phantasma-io/phantasma-go/pkg/util"
 )
+
+type Visitor_DumpSeriesAll struct {
+	output   *Output
+	exported map[string]struct{}
+}
+
+func (v *Visitor_DumpSeriesAll) Visit(it *grocksdb.Iterator) bool {
+	keySlice := it.Key()
+	symbol, seriesID, ok := parseTokenSeriesStorageKey(keySlice.Data())
+	if !ok {
+		keySlice.Free()
+		return true
+	}
+
+	exportKey := symbol + "#" + seriesID
+	if _, exists := v.exported[exportKey]; exists {
+		keySlice.Free()
+		return true
+	}
+
+	valueSlice := it.Value()
+	seriesContent := phaio.Deserialize[*contract.TokenSeries_S](util.ArrayClone(valueSlice.Data()))
+	valueSlice.Free()
+
+	seriesContent.Symbol = symbol
+	seriesContent.SeriesID = seriesID
+	v.output.AddJsonRecord(seriesContent)
+	v.exported[exportKey] = struct{}{}
+
+	keySlice.Free()
+	return true
+}
+
+func parseTokenSeriesStorageKey(key []byte) (string, string, bool) {
+	keyString := string(key)
+	seriesPrefixIndex := strings.Index(keyString, ".serie")
+	if seriesPrefixIndex <= 0 {
+		return "", "", false
+	}
+
+	seriesID := keyString[seriesPrefixIndex+len(".serie"):]
+	if !isNumber(seriesID) {
+		return "", "", false
+	}
+
+	symbol := keyString[:seriesPrefixIndex]
+	// Native/contract storage keys are dot-prefixed. Token series keys are
+	// "<SYMBOL>.serie<id>", so we ignore dot-prefixed candidates.
+	if strings.HasPrefix(symbol, ".") {
+		return "", "", false
+	}
+
+	return symbol, seriesID, true
+}
 
 func dump() {
 	if appOpts.DumpNfts {
@@ -67,6 +123,21 @@ func dump() {
 				alreadyExported = append(alreadyExported, b.TokenSymbol+tokenContent.SeriesID)
 			}
 		}
+
+		c.Destroy()
+		o.Flush()
+	} else if appOpts.DumpSeriesAll {
+		c := rocksdb.NewConnection(appOpts.DbPath, appOpts.ColumnFamily)
+		o := NewOutput(OutputFormatFromString(appOpts.OutputFormat))
+
+		// This mode scans the DB keyspace directly to export every serialized
+		// series entry, including series that currently have no minted NFTs and
+		// therefore do not appear in balance-driven traversal.
+		v := Visitor_DumpSeriesAll{
+			output:   o,
+			exported: make(map[string]struct{}),
+		}
+		c.Visit(&v)
 
 		c.Destroy()
 		o.Flush()

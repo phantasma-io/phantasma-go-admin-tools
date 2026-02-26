@@ -39,6 +39,7 @@ var appOpts struct {
 	DumpStakes                  bool   `long:"dump-stakes" description:"Dump stakes"`
 	DumpNfts                    bool   `long:"dump-nfts" description:"Dump nfts"`
 	DumpSeries                  bool   `long:"dump-series" description:"Dump nft series"`
+	DumpSeriesAll               bool   `long:"dump-series-all" description:"Dump nft series by scanning series keys directly (includes series without minted NFTs)"`
 	DumpContractNames           bool   `long:"dump-contract-names" description:"Dump names of deployed contracts"`
 	DumpContractVars            bool   `long:"dump-contract-vars" description:"Dump global variables of deployed contracts"`
 	DumpContractInfos           bool   `long:"dump-contract-infos" description:"Dump common information about deployed contracts"`
@@ -247,7 +248,7 @@ func main() {
 
 	if appOpts.DumpData || appOpts.DumpAddresses || appOpts.DumpTokenSymbols || appOpts.DumpBalances || appOpts.DumpBalancesNft ||
 		appOpts.DumpBlockHashes || appOpts.DumpBlocks || appOpts.DumpTransactions ||
-		appOpts.DumpNfts || appOpts.DumpSeries {
+		appOpts.DumpNfts || appOpts.DumpSeries || appOpts.DumpSeriesAll {
 		dump()
 	} else if appOpts.DumpTokenInfo {
 		dump_TokenInfo()
