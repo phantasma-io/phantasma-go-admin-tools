@@ -74,6 +74,7 @@ var appOpts struct {
 	fungibleBalances []storage.BalanceFungible
 	nftBalances      []storage.BalanceNonFungible
 	nftTokenIds      []string
+	nftTokenIdSet    map[string]struct{}
 	kcalLeftovers    []storage.KeyValue
 }
 
@@ -317,8 +318,12 @@ func main() {
 		json.Unmarshal(b, &tokenContents)
 
 		appOpts.nftTokenIds = make([]string, 0)
+		// contract_vars visitors check potential token-id suffixes for many keys,
+		// so we keep an O(1) membership set instead of repeated linear scans.
+		appOpts.nftTokenIdSet = make(map[string]struct{}, len(tokenContents))
 		for _, tokenContent := range tokenContents {
 			appOpts.nftTokenIds = append(appOpts.nftTokenIds, tokenContent.TokenID)
+			appOpts.nftTokenIdSet[tokenContent.TokenID] = struct{}{}
 		}
 
 		fmt.Printf("Loaded %d NFT ids\n", len(appOpts.nftTokenIds))

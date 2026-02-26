@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"slices"
 	"strings"
 	"unicode"
@@ -41,7 +42,12 @@ func isNumber(s string) bool {
 }
 
 func isTokenId(s string) bool {
-	return isNumber(s) && slices.Contains(appOpts.nftTokenIds, s)
+	if !isNumber(s) {
+		return false
+	}
+
+	_, ok := appOpts.nftTokenIdSet[s]
+	return ok
 }
 
 var contractVariables map[string]storage.ContractVariables = make(map[string]storage.ContractVariables)
@@ -135,6 +141,13 @@ func (v *Visitor_ContractsVariables) Visit(it *grocksdb.Iterator) bool {
 }
 
 func dump_ContractsVariables() {
+	// Keep state local to the current run. These accumulators are package-level
+	// variables and must be reset before each dump to avoid stale carry-over if
+	// multiple dump modes are ever invoked in a single process.
+	mapKeysAndCouns = make(map[string]big.Int)
+	mapKeys = make([]string, 0)
+	contractVariables = make(map[string]storage.ContractVariables)
+
 	v1 := Visitor_ContractsVariables_Maps{}
 	v1.Init(appOpts.DbPath, appOpts.ColumnFamily, appOpts.OutputFormat)
 	v1.Connection.Visit(&v1)
@@ -150,7 +163,9 @@ func dump_ContractsVariables() {
 		if !ok {
 			panic("Map not found: " + mName)
 		}
-		fmt.Printf("Map or list: %s - %d\n", mName, mCount.Int64())
+		if appOpts.Verbose {
+			fmt.Printf("Map or list: %s - %d\n", mName, mCount.Int64())
+		}
 	}
 
 	v2 := Visitor_ContractsVariables{}
