@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/jessevdk/go-flags"
@@ -42,6 +43,7 @@ var appOpts struct {
 	DumpSeriesAll               bool   `long:"dump-series-all" description:"Dump nft series by scanning series keys directly (includes series without minted NFTs)"`
 	DumpContractNames           bool   `long:"dump-contract-names" description:"Dump names of deployed contracts"`
 	DumpContractVars            bool   `long:"dump-contract-vars" description:"Dump global variables of deployed contracts"`
+	IncludeNativeContractVars   bool   `long:"include-native-contract-vars" description:"Append known native namespaces when dumping contract variables"`
 	DumpContractInfos           bool   `long:"dump-contract-infos" description:"Dump common information about deployed contracts"`
 	MergeKcalLeftovers          bool   `long:"merge-kcal-leftovers" description:"Merge KCAL leftovers to balances"`
 	Decompress                  bool   `long:"decompress" description:"Decompress blocks and txes, works with --dump-blocks and --dump-txes. False by default"`
@@ -73,6 +75,32 @@ var appOpts struct {
 	nftBalances      []storage.BalanceNonFungible
 	nftTokenIds      []string
 	kcalLeftovers    []storage.KeyValue
+}
+
+var nativeContractVarNamespaces = []string{
+	// Keep this list focused on native contract namespaces that carry
+	// governance/runtime state. We intentionally exclude ".storage" because it
+	// contains user contract data maps and can explode export size/time without
+	// helping the native-script recovery workflow.
+	".gas",
+	".stake",
+	".token",
+	".governance",
+	".nexus",
+	".validator",
+	".interop",
+	".market",
+	".sale",
+	".exchange",
+	".org",
+}
+
+func appendUniqueSubkey(values []string, next string) []string {
+	if slices.Contains(values, next) {
+		return values
+	}
+
+	return append(values, next)
 }
 
 func main() {
@@ -125,6 +153,15 @@ func main() {
 		}
 	} else if appOpts.SubKeys != "" {
 		appOpts.subKeysSlice = strings.Split(appOpts.SubKeys, ",")
+	}
+
+	if appOpts.DumpContractVars && appOpts.IncludeNativeContractVars {
+		// Native contract namespaces are dot-prefixed keys (for example ".gas.*").
+		// We append them explicitly to avoid incomplete exports when subkeys are
+		// sourced only from token symbols and deployed contract names.
+		for _, namespace := range nativeContractVarNamespaces {
+			appOpts.subKeysSlice = appendUniqueSubkey(appOpts.subKeysSlice, namespace)
+		}
 	}
 
 	if appOpts.ListKeysWithUnknownBaseKeys {
