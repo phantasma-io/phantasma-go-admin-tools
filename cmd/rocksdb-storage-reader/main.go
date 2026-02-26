@@ -79,10 +79,14 @@ var appOpts struct {
 }
 
 var nativeContractVarNamespaces = []string{
-	// Keep this list focused on native contract namespaces that carry
-	// governance/runtime state. We intentionally exclude ".storage" because it
-	// contains user contract data maps and can explode export size/time without
-	// helping the native-script recovery workflow.
+	// Full native/control-plane coverage for contract-vars export.
+	// This list intentionally includes registries that are not part of the
+	// deployed contract names CSV, because they still hold chain-critical state.
+	".account",
+	".consensus",
+	".storage",
+	".contracts",
+	".orgs",
 	".gas",
 	".stake",
 	".token",

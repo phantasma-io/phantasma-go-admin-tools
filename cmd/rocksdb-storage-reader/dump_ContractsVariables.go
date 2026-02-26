@@ -52,6 +52,21 @@ func isTokenId(s string) bool {
 
 var contractVariables map[string]storage.ContractVariables = make(map[string]storage.ContractVariables)
 
+func matchContractNamespace(key []byte) (string, string, bool) {
+	for _, contractName := range appOpts.subKeysSlice {
+		// Most namespaces use "<name>.<field>", but token metadata is stored as
+		// ".token:<symbol>". We support both separators to avoid silent drops.
+		if bytes.HasPrefix(key, []byte(contractName+".")) {
+			return contractName, ".", true
+		}
+		if bytes.HasPrefix(key, []byte(contractName+":")) {
+			return contractName, ":", true
+		}
+	}
+
+	return "", "", false
+}
+
 func (v *Visitor_ContractsVariables) Visit(it *grocksdb.Iterator) bool {
 	if v.Connection == nil {
 		panic("Connection must be set")
@@ -59,20 +74,14 @@ func (v *Visitor_ContractsVariables) Visit(it *grocksdb.Iterator) bool {
 
 	keySlice := it.Key()
 
-	foundContract := ""
-	for _, contractName := range appOpts.subKeysSlice {
-		if bytes.HasPrefix(keySlice.Data(), []byte(contractName+".")) {
-			foundContract = contractName
-			break
-		}
-	}
-	if foundContract == "" {
+	foundContract, keySeparator, found := matchContractNamespace(keySlice.Data())
+	if !found {
 		keySlice.Free()
 		return true
 	}
 
 	kr := storage.KeyValueReaderNew(keySlice.Data())
-	kr.SkipBytes(len(foundContract + "."))
+	kr.SkipBytes(len(foundContract + keySeparator))
 	keyString := kr.ReadString(false)
 	if isTokenId(keyString) {
 		keySlice.Free()
@@ -100,7 +109,7 @@ func (v *Visitor_ContractsVariables) Visit(it *grocksdb.Iterator) bool {
 	for _, p := range mapKeys {
 		if bytes.HasPrefix(keySlice.Data(), []byte(p)) {
 			mapItemFound = true
-			mapKey = p[len(foundContract+"."):len(p)]
+			mapKey = p[len(foundContract+keySeparator):]
 			break
 		}
 	}
@@ -112,11 +121,11 @@ func (v *Visitor_ContractsVariables) Visit(it *grocksdb.Iterator) bool {
 
 	if mapItemFound {
 		kr := storage.KeyValueReaderNew(keySlice.Data())
-		kr.SkipBytes(len(foundContract + "." + mapKey))
+		kr.SkipBytes(len(foundContract + keySeparator + mapKey))
 
 		varMap, ok := contractItem.MapsAndLists[mapKey]
 		if !ok {
-			count := mapKeysAndCouns[foundContract+"."+mapKey]
+			count := mapKeysAndCouns[foundContract+keySeparator+mapKey]
 			varMap = storage.MapOfVars{Count: uint64(count.Int64()), Values: make([]storage.SingleVar, 0)}
 		}
 
@@ -127,7 +136,7 @@ func (v *Visitor_ContractsVariables) Visit(it *grocksdb.Iterator) bool {
 		contractItem.MapsAndLists[mapKey] = varMap
 	} else {
 		kr := storage.KeyValueReaderNew(keySlice.Data())
-		kr.SkipBytes(len(foundContract + "."))
+		kr.SkipBytes(len(foundContract + keySeparator))
 
 		contractItem.SingleVars = append(contractVariables[foundContract].SingleVars, storage.SingleVar{Key: kr.ReadString(false), Value: util.ArrayClone(valueSlice.Data())})
 	}

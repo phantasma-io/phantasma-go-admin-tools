@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"math/big"
 	"strings"
 
@@ -37,20 +36,14 @@ func (v *Visitor_ContractsVariables_Maps) Visit(it *grocksdb.Iterator) bool {
 
 	keySlice := it.Key()
 
-	foundContract := ""
-	for _, contractName := range appOpts.subKeysSlice {
-		if bytes.HasPrefix(keySlice.Data(), []byte(contractName+".")) {
-			foundContract = contractName
-			break
-		}
-	}
-	if foundContract == "" {
+	foundContract, keySeparator, found := matchContractNamespace(keySlice.Data())
+	if !found {
 		keySlice.Free()
 		return true
 	}
 
 	kr := storage.KeyValueReaderNew(keySlice.Data())
-	kr.SkipBytes(len(foundContract + "."))
+	kr.SkipBytes(len(foundContract + keySeparator))
 	keyString := kr.ReadString(false)
 	if isTokenId(keyString) {
 		keySlice.Free()
