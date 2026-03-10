@@ -33,6 +33,10 @@ func (v *Visitor_ContractsVariables) Uninit() {
 }
 
 func isNumber(s string) bool {
+	if s == "" {
+		return false
+	}
+
 	for _, c := range s {
 		if !unicode.IsDigit(c) {
 			return false
@@ -89,8 +93,7 @@ func (v *Visitor_ContractsVariables) Visit(it *grocksdb.Iterator) bool {
 	}
 
 	if strings.HasPrefix(keyString, seriePrefix) {
-		kr.SkipBytes(len(seriePrefix))
-		seriesPostfix := kr.ReadString(false)
+		seriesPostfix := strings.TrimPrefix(keyString, seriePrefix)
 		if isNumber(seriesPostfix) {
 			keySlice.Free()
 			return true

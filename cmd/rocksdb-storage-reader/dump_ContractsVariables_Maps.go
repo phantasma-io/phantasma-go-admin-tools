@@ -51,8 +51,7 @@ func (v *Visitor_ContractsVariables_Maps) Visit(it *grocksdb.Iterator) bool {
 	}
 
 	if strings.HasPrefix(keyString, seriePrefix) {
-		kr.SkipBytes(len(seriePrefix))
-		seriesPostfix := kr.ReadString(false)
+		seriesPostfix := strings.TrimPrefix(keyString, seriePrefix)
 		if isNumber(seriesPostfix) {
 			keySlice.Free()
 			return true
