@@ -183,6 +183,7 @@ func dump_ContractsVariables() {
 	v2 := Visitor_ContractsVariables{}
 	v2.Init(appOpts.DbPath, appOpts.ColumnFamily, appOpts.OutputFormat)
 	v2.Connection.Visit(&v2)
+	normalizeContractVariablesLogicalState()
 
 	row, err := json.Marshal(contractVariables)
 	if err != nil {

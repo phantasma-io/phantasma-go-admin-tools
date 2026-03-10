@@ -7,6 +7,8 @@ import (
 )
 
 func dump_StakingClaims() {
+	addresses_StakingClaims = make([]string, 0)
+
 	v0 := Visitor_StakingClaims_Maps{}
 	v0.KeyPrefix = []byte(".stake._claimMap.")
 	v0.Init(appOpts.DbPath, appOpts.ColumnFamily, appOpts.OutputFormat)

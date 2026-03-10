@@ -1,10 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 
-	"github.com/linxGnu/grocksdb"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/phantasma/storage"
 	"github.com/phantasma-io/phantasma-go-admin-tools/pkg/rocksdb"
 )
@@ -27,45 +25,24 @@ func (v *Visitor_StakingMasterClaims) Uninit() {
 
 var stakingMasterClaims []storage.KeyValueJson
 
-func (v *Visitor_StakingMasterClaims) Visit(it *grocksdb.Iterator) bool {
-	if v.Connection == nil {
-		panic("Connection must be set")
-	}
-
-	keySlice := it.Key()
-
-	if v.KeyPrefix != nil && !bytes.HasPrefix(keySlice.Data(), v.KeyPrefix) {
-		keySlice.Free()
-		return true
-	}
-	if bytes.HasSuffix(keySlice.Data(), []byte(countSuffix)) {
-		keySlice.Free()
-		return true
-	}
-
-	valueSlice := it.Value()
-
-	kr := storage.KeyValueReaderNew(keySlice.Data())
-	kr.SkipBytes(len(v.KeyPrefix))
-	address := kr.ReadAddress(true)
-
-	vr := storage.KeyValueReaderNew(valueSlice.Data())
-
-	stakingMasterClaims = append(stakingMasterClaims, storage.KeyValueJson{Key: address.Text(), Value: vr.ReadTimestamp()})
-
-	keySlice.Free()
-	valueSlice.Free()
-
-	return true
-}
-
 func dump_StakingMasterClaims() {
+	stakingMasterClaims = make([]storage.KeyValueJson, 0)
+
 	v := Visitor_StakingMasterClaims{}
 	v.Init(appOpts.DbPath, appOpts.ColumnFamily, appOpts.OutputFormat)
 
 	v.KeyPrefix = []byte(".stake._masterClaims")
 
-	v.Connection.Visit(&v)
+	count := readLogicalCount(v.Connection, v.KeyPrefix)
+	entries := collectLogicalPrefixedEntries(v.Connection, v.KeyPrefix, count)
+	for _, entry := range entries {
+		kr := storage.KeyValueReaderNew(entry.key)
+		kr.SkipBytes(len(v.KeyPrefix))
+		address := kr.ReadAddress(true)
+
+		vr := storage.KeyValueReaderNew(entry.value)
+		stakingMasterClaims = append(stakingMasterClaims, storage.KeyValueJson{Key: address.Text(), Value: vr.ReadTimestamp()})
+	}
 
 	row, err := json.Marshal(stakingMasterClaims)
 	if err != nil {
